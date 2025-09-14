@@ -1,0 +1,13 @@
+# For more information, see https://supabase.com/docs/reference/cli/config
+
+[project]
+id = "arbitraje_minorista"
+
+[api]
+port = 8000
+
+[db]
+port = 5432
+
+[studio]
+port = 54321

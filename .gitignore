@@ -1,0 +1,14 @@
+# Archivos del sistema operativo
+.DS_Store
+
+# Entornos de desarrollo e IDEs
+.vscode/
+.idea/
+
+# Archivos de Gemini
+gemini.md
+recomendaciones_equipo_asesor_externo.md
+
+# Archivos de entorno local
+*.env
+*.env.local
