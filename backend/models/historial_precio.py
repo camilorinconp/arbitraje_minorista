@@ -5,6 +5,7 @@ from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from ..services.database import Base
 
+
 class HistorialPrecio(Base):
     __tablename__ = "historial_precios"
 

@@ -1,10 +1,11 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from .routes import gestion_datos
 
 app = FastAPI(
     title="Arbitraje Minorista API",
     version="0.1.0",
-    description="API para el seguimiento de productos y oportunidades de arbitraje."
+    description="API para el seguimiento de productos y oportunidades de arbitraje.",
 )
 
 # Configuración de CORS
@@ -21,10 +22,11 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
 @app.get("/")
 def read_root():
     return {"message": "Bienvenido a la API de Arbitraje Minorista"}
 
+
 # Aquí se incluirán los routers más adelante
-from .routes import gestion_datos
 app.include_router(gestion_datos.router)

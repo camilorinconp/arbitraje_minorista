@@ -5,3 +5,8 @@ playwright
 supabase
 psycopg2-binary
 python-dotenv
+
+# Herramientas de calidad de código
+black
+ruff
+pre-commit

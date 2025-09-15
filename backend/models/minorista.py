@@ -5,6 +5,7 @@ from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from ..services.database import Base
 
+
 class Minorista(Base):
     __tablename__ = "minoristas"
 

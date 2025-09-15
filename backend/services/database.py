@@ -13,7 +13,9 @@ supabase_url = os.getenv("SUPABASE_URL")
 supabase_key = os.getenv("SUPABASE_KEY")
 
 if not supabase_url or not supabase_key:
-    raise ValueError("Las variables de entorno SUPABASE_URL y SUPABASE_KEY son necesarias.")
+    raise ValueError(
+        "Las variables de entorno SUPABASE_URL y SUPABASE_KEY son necesarias."
+    )
 
 supabase_client: Client = create_client(supabase_url, supabase_key)
 
@@ -26,6 +28,7 @@ if not database_url:
 engine = create_engine(database_url)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
+
 
 # Función para obtener una sesión de base de datos
 def get_db():
