@@ -1,7 +1,7 @@
 // frontend/src/components/ListaProductos.tsx
 
 import React, { useEffect, useState } from 'react';
-import { getProductos, getMinoristas, createMinorista, activarScraper, Producto, Minorista } from '../api/gestionDatosApi';
+import { getProductos, getMinoristas, createMinorista, runScraper, Producto, Minorista } from '../api/gestionDatosApi';
 import { 
   Container, 
   Typography, 
@@ -78,7 +78,7 @@ const ListaProductos: React.FC = () => {
       return;
     }
     try {
-      await activarScraper(urlProductoScrape, minoristaSeleccionadoId as number);
+      await runScraper(urlProductoScrape, minoristaSeleccionadoId as number);
       setOpenScraperDialog(false);
       setUrlProductoScrape('');
       setMinoristaSeleccionadoId('');

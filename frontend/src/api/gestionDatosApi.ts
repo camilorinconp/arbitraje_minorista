@@ -92,15 +92,15 @@ export const createMinorista = async (minoristaData: MinoristaBase): Promise<Min
 };
 
 // Scraper
-export const activarScraper = async (urlProducto: string, idMinorista: number): Promise<Producto> => {
+export const runScraper = async (product_url: string, id_minorista: number): Promise<Producto> => {
   try {
-    const response = await axios.post<Producto>(`${API_BASE_URL}/gestion-datos/scrape/`, {
-      url_producto: urlProducto,
-      id_minorista: idMinorista,
+    const response = await axios.post<Producto>(`${API_BASE_URL}/scraper/run/`, {
+      product_url,
+      id_minorista,
     });
     return response.data;
   } catch (error) {
-    console.error("Error al activar scraper:", error);
+    console.error("Error al ejecutar el scraper:", error);
     throw error;
   }
 };

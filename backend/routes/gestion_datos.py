@@ -7,7 +7,7 @@ from pydantic import BaseModel, HttpUrl
 from typing import List, Optional
 from datetime import datetime
 
-from ..services import database, scraper as scraper_service
+from ..services import database
 from ..models.producto import Producto as ProductoModel
 from ..models.minorista import Minorista as MinoristaModel
 from ..models.historial_precio import HistorialPrecio as HistorialPrecioModel
@@ -67,11 +67,6 @@ class HistorialPrecioSchema(BaseModel):
         orm_mode = True
 
 
-class ScrapeRequest(BaseModel):
-    product_url: HttpUrl
-    id_minorista: int
-
-
 # --- Endpoints para Minoristas ---
 
 
@@ -124,29 +119,6 @@ def obtener_minorista(minorista_id: int, db: Session = Depends(database.get_db))
     if minorista is None:
         raise HTTPException(status_code=404, detail="Minorista no encontrado.")
     return minorista
-
-
-# --- Endpoints para Scraper ---
-
-
-@router.post("/scrape/", response_model=Producto)
-async def activar_scraper(
-    request: ScrapeRequest, db: Session = Depends(database.get_db)
-):
-    """
-    Activa el scraper para una URL de producto específica de un minorista y guarda/actualiza los datos.
-    """
-    try:
-        producto = await scraper_service.scrape_product_data(
-            str(request.product_url), request.id_minorista, db
-        )
-        return producto
-    except HTTPException as e:
-        raise e
-    except Exception as e:
-        raise HTTPException(
-            status_code=500, detail=f"Error al procesar la solicitud de scraping: {e}"
-        )
 
 
 # --- Endpoints para Productos (actualizados para usar el nuevo modelo) ---

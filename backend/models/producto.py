@@ -1,6 +1,6 @@
 # backend/models/producto.py
 
-from sqlalchemy import Column, BigInteger, String, Numeric, DateTime, ForeignKey
+from sqlalchemy import Column, Integer, BigInteger, String, Numeric, DateTime, ForeignKey
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from ..services.database import Base
@@ -9,7 +9,7 @@ from ..services.database import Base
 class Producto(Base):
     __tablename__ = "productos"
 
-    id = Column(BigInteger, primary_key=True, index=True)
+    id = Column(Integer, primary_key=True, autoincrement=True, index=True)
     name = Column(String, nullable=False)
     price = Column(Numeric(10, 2), nullable=False)
     product_url = Column(String, nullable=False, unique=True)
