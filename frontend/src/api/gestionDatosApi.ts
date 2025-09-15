@@ -6,12 +6,24 @@ const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
 
 // --- Interfaces ---
 
+export interface MinoristaBase {
+  nombre: string;
+  url_base: string;
+  activo?: boolean;
+  name_selector?: string | null;
+  price_selector?: string | null;
+  image_selector?: string | null;
+}
+
 export interface Minorista {
   id: number;
   nombre: string;
   url_base: string;
   activo: boolean;
-  fecha_creacion: string; // ISO string date
+  created_at: string; // ISO string date
+  name_selector: string | null;
+  price_selector: string | null;
+  image_selector: string | null;
 }
 
 export interface Producto {
@@ -69,7 +81,7 @@ export const getMinoristas = async (): Promise<Minorista[]> => {
   }
 };
 
-export const createMinorista = async (minoristaData: { nombre: string; url_base: string }): Promise<Minorista> => {
+export const createMinorista = async (minoristaData: MinoristaBase): Promise<Minorista> => {
   try {
     const response = await axios.post<Minorista>(`${API_BASE_URL}/gestion-datos/minoristas/`, minoristaData);
     return response.data;

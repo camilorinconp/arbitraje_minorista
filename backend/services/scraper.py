@@ -21,16 +21,27 @@ async def scrape_product_data(product_url: str, id_minorista: int, db: Session):
             await page.goto(product_url, wait_until='domcontentloaded')
             print(f"Navegando a: {product_url}")
 
-            # --- Lógica de extracción de datos (ejemplo básico) ---
-            # Esto es un placeholder. Deberá ser adaptado para cada minorista.
-            # Para el MVP, asumimos una estructura simple.
-            name_selector = 'h1'
-            price_selector = '.price'
-            image_selector = 'img.product-image'
+            # --- Lógica de extracción de datos dinámica ---
+            
+            # Buscar el minorista para obtener los selectores
+            minorista = db.query(Minorista).filter(Minorista.id == id_minorista).first()
+            if not minorista:
+                raise HTTPException(status_code=404, detail=f"Minorista con ID {id_minorista} no encontrado.")
+
+            # Validar que los selectores estén configurados
+            if not all([minorista.name_selector, minorista.price_selector]):
+                raise HTTPException(status_code=400, detail=f"El minorista '{minorista.nombre}' no tiene los selectores de scraping configurados.")
+
+            name_selector = minorista.name_selector
+            price_selector = minorista.price_selector
+            image_selector = minorista.image_selector # Puede ser nulo
 
             name = await page.locator(name_selector).first.text_content() if await page.locator(name_selector).first.is_visible() else "Nombre Desconocido"
             price_str = await page.locator(price_selector).first.text_content() if await page.locator(price_selector).first.is_visible() else "0.00"
-            image_url = await page.locator(image_selector).first.get_attribute('src') if await page.locator(image_selector).first.is_visible() else None
+            
+            image_url = None
+            if image_selector and await page.locator(image_selector).first.is_visible():
+                image_url = await page.locator(image_selector).first.get_attribute('src')
 
             # Limpiar y convertir price
             # Asumiendo que el price puede venir con símbolos de moneda o comas
@@ -42,10 +53,7 @@ async def scrape_product_data(product_url: str, id_minorista: int, db: Session):
             # --- Guardar o actualizar en la base de datos ---
             current_time = datetime.now()
             
-            # Buscar el minorista
-            minorista_existente = db.query(Minorista).filter(Minorista.id == id_minorista).first()
-            if not minorista_existente:
-                raise HTTPException(status_code=404, detail=f"Minorista con ID {id_minorista} no encontrado.")
+            
 
             # Buscar producto existente por URL y minorista
             producto_existente = db.query(Producto).filter(

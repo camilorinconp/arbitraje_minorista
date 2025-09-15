@@ -22,6 +22,9 @@ class MinoristaBase(BaseModel):
     nombre: str
     url_base: HttpUrl
     activo: Optional[bool] = True
+    name_selector: Optional[str] = None
+    price_selector: Optional[str] = None
+    image_selector: Optional[str] = None
 
 class Minorista(MinoristaBase):
     id: int
@@ -68,7 +71,14 @@ def crear_minorista(minorista: MinoristaBase, db: Session = Depends(database.get
     """
     Crea un nuevo minorista en la base de datos.
     """
-    db_minorista = MinoristaModel(nombre=minorista.nombre, url_base=str(minorista.url_base), activo=minorista.activo)
+    db_minorista = MinoristaModel(
+        nombre=minorista.nombre, 
+        url_base=str(minorista.url_base), 
+        activo=minorista.activo,
+        name_selector=minorista.name_selector,
+        price_selector=minorista.price_selector,
+        image_selector=minorista.image_selector
+    )
     try:
         db.add(db_minorista)
         db.commit()

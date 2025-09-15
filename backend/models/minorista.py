@@ -14,6 +14,11 @@ class Minorista(Base):
     activo = Column(Boolean, default=True, nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
+    # Nuevas columnas para selectores de scraper
+    name_selector = Column(String, nullable=True)
+    price_selector = Column(String, nullable=True)
+    image_selector = Column(String, nullable=True)
+
     # Relaciones
     productos = relationship("Producto", back_populates="minorista")
     historial_precios = relationship("HistorialPrecio", back_populates="minorista")
