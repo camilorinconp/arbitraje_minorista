@@ -12,7 +12,7 @@ class Minorista(Base):
     nombre = Column(String, nullable=False, unique=True)
     url_base = Column(String, nullable=False)
     activo = Column(Boolean, default=True, nullable=False)
-    fecha_creacion = Column(DateTime(timezone=True), server_default=func.now())
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     # Relaciones
     productos = relationship("Producto", back_populates="minorista")

@@ -9,12 +9,12 @@ class Producto(Base):
     __tablename__ = "productos"
 
     id = Column(BigInteger, primary_key=True, index=True)
-    nombre = Column(String, nullable=False)
-    precio = Column(Numeric(10, 2), nullable=False)
-    url_producto = Column(String, nullable=False, unique=True)
-    url_imagen = Column(String, nullable=True)
-    ultima_fecha_rastreo = Column(DateTime(timezone=True), server_default=func.now())
-    fecha_creacion = Column(DateTime(timezone=True), server_default=func.now())
+    name = Column(String, nullable=False)
+    price = Column(Numeric(10, 2), nullable=False)
+    product_url = Column(String, nullable=False, unique=True)
+    image_url = Column(String, nullable=True)
+    last_scraped_at = Column(DateTime(timezone=True), server_default=func.now())
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
     
     # Nuevas columnas
     id_minorista = Column(BigInteger, ForeignKey("minoristas.id"), nullable=True) # Será NOT NULL una vez que tengamos minoristas

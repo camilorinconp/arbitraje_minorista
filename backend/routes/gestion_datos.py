@@ -25,22 +25,22 @@ class MinoristaBase(BaseModel):
 
 class Minorista(MinoristaBase):
     id: int
-    fecha_creacion: datetime
+    created_at: datetime
 
     class Config:
         orm_mode = True
 
 class ProductoBase(BaseModel):
-    nombre: str
-    precio: float
-    url_producto: HttpUrl
-    url_imagen: Optional[str] = None
+    name: str
+    price: float
+    product_url: HttpUrl
+    image_url: Optional[str] = None
     identificador_producto: Optional[str] = None
 
 class Producto(ProductoBase):
     id: int
-    ultima_fecha_rastreo: datetime
-    fecha_creacion: datetime
+    last_scraped_at: datetime
+    created_at: datetime
     id_minorista: int
     minorista: Optional[Minorista] # Relación con Minorista
 
@@ -58,7 +58,7 @@ class HistorialPrecioSchema(BaseModel):
         orm_mode = True
 
 class ScrapeRequest(BaseModel):
-    url_producto: HttpUrl
+    product_url: HttpUrl
     id_minorista: int
 
 # --- Endpoints para Minoristas ---
@@ -104,7 +104,7 @@ async def activar_scraper(request: ScrapeRequest, db: Session = Depends(database
     Activa el scraper para una URL de producto específica de un minorista y guarda/actualiza los datos.
     """
     try:
-        producto = await scraper_service.scrape_product_data(str(request.url_producto), request.id_minorista, db)
+        producto = await scraper_service.scrape_product_data(str(request.product_url), request.id_minorista, db)
         return producto
     except HTTPException as e:
         raise e
