@@ -1,11 +1,11 @@
 import React from 'react';
-import ProductList from './components/ProductList';
+import ListaProductos from './components/ListaProductos';
 
 function App() {
   return (
     <div>
       <h1>Herramienta de Arbitraje Minorista</h1>
-      <ProductList />
+      <ListaProductos />
     </div>
   );
 }
