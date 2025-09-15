@@ -6,17 +6,20 @@ from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy import update
 from datetime import datetime
+from fastapi import HTTPException
 
-from ..models.product import Product
+from ..models.producto import Producto
+from ..models.minorista import Minorista
+from ..models.historial_precio import HistorialPrecio
 
-async def scrape_product_data(product_url: str, db: Session):
+async def scrape_product_data(url_producto: str, id_minorista: int, db: Session):
     async with async_playwright() as p:
         browser = await p.chromium.launch(headless=True) # Usar headless=True para producción
         page = await browser.new_page()
         
         try:
-            await page.goto(product_url, wait_until='domcontentloaded')
-            print(f"Navegando a: {product_url}")
+            await page.goto(url_producto, wait_until='domcontentloaded')
+            print(f"Navegando a: {url_producto}")
 
             # --- Lógica de extracción de datos (ejemplo básico) ---
             # Esto es un placeholder. Deberá ser adaptado para cada minorista.
@@ -25,54 +28,80 @@ async def scrape_product_data(product_url: str, db: Session):
             price_selector = '.price'
             image_selector = 'img.product-image'
 
-            name = await page.locator(name_selector).first.text_content() if await page.locator(name_selector).first.is_visible() else "No Name"
-            price_str = await page.locator(price_selector).first.text_content() if await page.locator(price_selector).first.is_visible() else "0.00"
-            image_url = await page.locator(image_selector).first.get_attribute('src') if await page.locator(image_selector).first.is_visible() else None
+            nombre = await page.locator(name_selector).first.text_content() if await page.locator(name_selector).first.is_visible() else "Nombre Desconocido"
+            precio_str = await page.locator(price_selector).first.text_content() if await page.locator(price_selector).first.is_visible() else "0.00"
+            url_imagen = await page.locator(image_selector).first.get_attribute('src') if await page.locator(image_selector).first.is_visible() else None
 
             # Limpiar y convertir precio
-            price = float(''.join(filter(str.isdigit or (lambda c: c == '.'), price_str)))
+            # Asumiendo que el precio puede venir con símbolos de moneda o comas
+            precio_limpio = ''.join(filter(lambda x: x.isdigit() or x == '.', precio_str.replace(',', '.')))
+            precio = float(precio_limpio) if precio_limpio else 0.00
 
-            print(f"Datos extraídos: Nombre={name}, Precio={price}, Imagen={image_url}")
+            print(f"Datos extraídos: Nombre={nombre}, Precio={precio}, Imagen={url_imagen}")
 
             # --- Guardar o actualizar en la base de datos ---
-            existing_product = db.query(Product).filter(Product.product_url == product_url).first()
             current_time = datetime.now()
+            
+            # Buscar el minorista
+            minorista_existente = db.query(Minorista).filter(Minorista.id == id_minorista).first()
+            if not minorista_existente:
+                raise HTTPException(status_code=404, detail=f"Minorista con ID {id_minorista} no encontrado.")
 
-            if existing_product:
+            # Buscar producto existente por URL y minorista
+            producto_existente = db.query(Producto).filter(
+                Producto.url_producto == url_producto,
+                Producto.id_minorista == id_minorista
+            ).first()
+
+            if producto_existente:
                 # Actualizar producto existente
-                stmt = update(Product).where(Product.product_url == product_url).values(
-                    name=name,
-                    price=price,
-                    image_url=image_url,
-                    last_scraped_at=current_time
-                )
-                db.execute(stmt)
+                producto_existente.nombre = nombre
+                producto_existente.precio = precio
+                producto_existente.url_imagen = url_imagen
+                producto_existente.ultima_fecha_rastreo = current_time
+                # identificador_producto no se actualiza aquí, se asume que es estático
+                db.add(producto_existente) # add para marcar como modificado
                 db.commit()
-                db.refresh(existing_product)
-                print(f"Producto actualizado: {existing_product.name}")
-                return existing_product
+                db.refresh(producto_existente)
+                print(f"Producto actualizado: {producto_existente.nombre}")
             else:
                 # Crear nuevo producto
-                new_product = Product(
-                    name=name,
-                    price=price,
-                    product_url=product_url,
-                    image_url=image_url,
-                    last_scraped_at=current_time
+                nuevo_producto = Producto(
+                    nombre=nombre,
+                    precio=precio,
+                    url_producto=url_producto,
+                    url_imagen=url_imagen,
+                    ultima_fecha_rastreo=current_time,
+                    id_minorista=id_minorista,
+                    identificador_producto=None # Placeholder, se puede extraer después
                 )
-                db.add(new_product)
+                db.add(nuevo_producto)
                 db.commit()
-                db.refresh(new_product)
-                print(f"Nuevo producto añadido: {new_product.name}")
-                return new_product
+                db.refresh(nuevo_producto)
+                print(f"Nuevo producto añadido: {nuevo_producto.nombre}")
+                producto_existente = nuevo_producto
 
-        except IntegrityError:
+            # Registrar historial de precios
+            nuevo_historial = HistorialPrecio(
+                id_producto=producto_existente.id,
+                id_minorista=id_minorista,
+                precio=precio,
+                fecha_registro=current_time
+            )
+            db.add(nuevo_historial)
+            db.commit()
+            db.refresh(nuevo_historial)
+            print(f"Historial de precio registrado para {producto_existente.nombre}")
+
+            return producto_existente
+
+        except IntegrityError as e:
             db.rollback()
-            print(f"Error de integridad al añadir/actualizar {product_url}. Posible duplicado.")
-            raise HTTPException(status_code=400, detail="Product URL already exists or other integrity issue.")
+            print(f"Error de integridad al añadir/actualizar {url_producto}: {e}")
+            raise HTTPException(status_code=400, detail=f"Error de integridad: {e}")
         except Exception as e:
             db.rollback()
-            print(f"Error durante el scraping de {product_url}: {e}")
+            print(f"Error durante el scraping de {url_producto}: {e}")
             raise HTTPException(status_code=500, detail=f"Error scraping product: {e}")
         finally:
             await browser.close()

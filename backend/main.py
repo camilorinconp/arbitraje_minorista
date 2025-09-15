@@ -25,7 +25,5 @@ def read_root():
     return {"message": "Bienvenido a la API de Arbitraje Minorista"}
 
 # Aquí se incluirán los routers más adelante
-from .routes import products
-from .routes import scraper
-app.include_router(products.router)
-app.include_router(scraper.router)
+from .routes import gestion_datos
+app.include_router(gestion_datos.router)
