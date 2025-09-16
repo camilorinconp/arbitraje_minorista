@@ -1,96 +1,86 @@
-# Ruta de Desarrollo: Herramienta de Arbitraje Minorista
+# 🚀 Proyecto: Arbitraje Minorista
 
-El objetivo principal es construir una plataforma que identifique de manera eficiente oportunidades de arbitraje minorista, permitiendo al usuario comprar productos en promoción para revenderlos con un margen de ganancia.
+Este proyecto es una aplicación web diseñada para identificar oportunidades de **arbitraje minorista**. El sistema rastrea sitios de comercio electrónico, almacena los precios de los productos y los presenta en un dashboard para que el usuario pueda tomar decisiones de compra y reventa.
 
-## Fase 1: El Producto Mínimo Viable (MVP)
+## 🏛️ Arquitectura General
 
-El enfoque de esta fase es validar la premisa del negocio. El equipo debe construir el núcleo de la herramienta: un sistema para extraer, almacenar y visualizar datos de precios de una única fuente.
+El proyecto sigue una arquitectura moderna de tres componentes principales, diseñada para una clara separación de responsabilidades y escalabilidad.
 
-### Objetivos Clave:
+1.  **Frontend (`/frontend`)**: Una Single Page Application (SPA) construida con **React** y **TypeScript**. Se encarga de toda la experiencia de usuario.
+    -   **UI**: Material-UI (MUI).
+    -   **Peticiones API**: `axios` y `@tanstack/react-query`.
 
-*   Validar la viabilidad técnica del web scraping en un entorno real.
-*   Crear el primer "cerebro" de la herramienta: el motor de rastreo.
-*   Diseñar una arquitectura base que sea escalable para futuras integraciones.
+2.  **Backend (`/backend`)**: Una API RESTful construida con **FastAPI** (Python). Orquesta toda la lógica de negocio, el web scraping y la comunicación con la base de datos.
+    -   **Acceso a Datos**: SQLAlchemy.
+    -   **Web Scraping**: Playwright.
 
-### Tareas Técnicas del Equipo:
+3.  **Base de Datos (`/supabase`)**: Utilizamos **Supabase** como nuestro Backend as a Service (BaaS), principalmente por su base de datos **PostgreSQL** y su excelente CLI para la gestión de migraciones.
 
-*   **Configuración del Entorno de Desarrollo:**
-    *   **Lenguaje:** Python (versión 3.9 o superior).
-    *   **Framework de Backend:** FastAPI. Instalar los paquetes necesarios: `fastapi`, `uvicorn`, `sqlalchemy`.
-    *   **Base de Datos:** Configurar una instancia de PostgreSQL en la nube (Supabase es ideal para el MVP por su facilidad de uso).
+## ⚙️ Cómo Empezar: Guía de Desarrollo
 
-*   **Construcción del Módulo de Web Scraping:**
-    *   Identificar las URL y la estructura HTML de un solo minorista sin API (e.g., Target o Lowe's, según el enfoque inicial).
-    *   Utilizar Playwright para simular la navegación del usuario. Esto es crucial para manejar sitios web dinámicos.
-    *   Escribir los "scrapers" para extraer datos clave de productos: nombre, precio, URL, imagen, y, si es posible, stock.
+A continuación se detallan los pasos y comandos para configurar y ejecutar el entorno de desarrollo local.
 
-*   **Diseño e Implementación de la Base de Datos (DB):**
-    *   Crear las tablas de la base de datos en PostgreSQL. La tabla principal de productos debe incluir campos como `id_producto`, `nombre`, `precio`, `url`, `fecha_hora_lectura`.
-    *   Utilizar SQLAlchemy para manejar la conexión y las operaciones de la DB desde FastAPI, garantizando un código limpio y portable.
+### Requisitos Previos
 
-*   **Desarrollo de la API de Backend (FastAPI):**
-    *   Crear endpoints para:
-        *   `POST /rastrear`: Disparar un rastreo manual de productos.
-        *   `GET /productos`: Obtener una lista de todos los productos rastreados.
-        *   `GET /productos/{id}`: Obtener detalles de un producto específico, incluyendo el historial de precios.
-    *   Implementar la lógica de negocio básica para identificar una "oferta": si el precio actual es un 20% menor que el precio promedio de la última semana.
+- **Node.js** (v18 o superior)
+- **Python** (v3.10 o superior)
+- **Supabase CLI** (`npm install -g supabase`)
 
-*   **Desarrollo del Frontend (Dashboard):**
-    *   Utilizar React para construir una interfaz de usuario simple y responsiva.
-    *   Crear componentes para:
-        *   Mostrar una lista de productos rastreados.
-        *   Presentar los datos clave (nombre, precio, fecha de la oferta).
-        *   Un filtro básico para ordenar por precio o fecha.
-    *   Conectar el frontend con el backend de FastAPI para consumir los datos de la API.
+### 1. Configuración del Backend
 
-## Fase 2: Escalabilidad y Expansión
+Navega al directorio del backend y activa el entorno virtual.
 
-Una vez que el MVP esté operativo y las primeras ofertas hayan sido identificadas, el equipo debe enfocarse en la robustez y la expansión del sistema.
+```bash
+# 1. Navega al directorio del backend
+cd backend
 
-### Objetivos Clave:
+# 2. Crea y activa un entorno virtual (recomendado)
+python -m venv venv
+source venv/bin/activate
 
-*   Aumentar la cobertura a múltiples minoristas y marcas.
-*   Asegurar la estabilidad y la capacidad del sistema para manejar grandes volúmenes de datos.
-*   Mejorar la precisión en la detección de oportunidades.
+# 3. Instala las dependencias
+pip install -r requirements.txt
+pip install -r requirements-dev.txt
 
-### Tareas Técnicas del Equipo:
+# 4. Configura las variables de entorno
+# Copia las variables de Supabase (URL, KEY, DATABASE_URL) a un archivo .env
 
-*   **Integración de Múltiples Rastreadores:**
-    *   Extender el web scraper para que pueda manejar las estructuras de otras tiendas (p. ej., Walmart, Best Buy).
-    *   Implementar un sistema de "gestión de rastreadores" que permita al usuario seleccionar qué tiendas rastrear.
+# 5. Inicia el servidor de desarrollo
+uvicorn main:app --reload
+```
 
-*   **Optimización y Automatización:**
-    *   Programar el rastreador para que se ejecute automáticamente a intervalos regulares (p. ej., cada 10-15 minutos) usando un servicio de "scheduler" como Celery (Python) o un cron job en la nube.
-    *   Implementar un mecanismo de manejo de errores para el web scraping que notifique al equipo si un rastreador se rompe debido a cambios en la estructura de un sitio web.
+El backend estará disponible en `http://localhost:8000`.
 
-*   **Refinamiento de la Lógica de Negocio:**
-    *   Integrar un sistema de análisis de datos más sofisticado que pueda calcular el margen de ganancia potencial estimado, incluyendo impuestos y costos de envío.
-    *   Crear una base de datos de precios históricos para cada producto, permitiendo una visión clara de los ciclos de precios.
+### 2. Configuración del Frontend
 
-*   **Mejoras en la Interfaz de Usuario:**
-    *   Agregar un gráfico de historial de precios en la vista de cada producto.
-    *   Añadir filtros avanzados (por categoría de producto, marca, o porcentaje de descuento).
-    *   Implementar un sistema de alertas por correo electrónico o notificaciones push para que el usuario reciba un aviso inmediato cuando se detecte una oferta que cumpla con sus criterios.
+En una nueva terminal, navega al directorio del frontend.
 
-## Fase 3: Inteligencia y Automatización Avanzada
+```bash
+# 1. Navega al directorio del frontend
+cd frontend
 
-Esta fase es la culminación del proyecto, transformando la herramienta en un centro de comando totalmente inteligente.
+# 2. Instala las dependencias
+npm install
 
-### Objetivos Clave:
+# 3. Inicia el servidor de desarrollo
+npm start
+```
 
-*   Minimizar la intervención humana en la toma de decisiones y en el proceso de compra.
-*   Maximizar el margen de ganancia a través de un análisis predictivo.
+La aplicación de React estará disponible en `http://localhost:3000`.
 
-### Tareas Técnicas del Equipo:
+### 3. Gestión de la Base de Datos (Supabase)
 
-*   **Integración de APIs de Reventa:**
-    *   Utilizar las APIs de plataformas de reventa como eBay o Mercado Libre para obtener datos del precio promedio al que se están vendiendo los productos actualmente. Esto permitirá un cálculo de rentabilidad más preciso.
+Todas las migraciones del esquema de la base de datos se gestionan con la CLI de Supabase y se encuentran en la carpeta `/supabase/migrations`.
 
-*   **Motor de Recomendación y Análisis Predictivo:**
-    *   Utilizar algoritmos de aprendizaje automático para predecir cuándo un producto alcanzará un precio mínimo, basándose en su historial de precios.
-    *   Implementar un sistema de "puntuación de oportunidad" que clasifique las ofertas basándose en el margen de ganancia potencial, la rotación del producto y el riesgo.
+```bash
+# Para aplicar las últimas migraciones a tu instancia local o en la nube
+supabase db push
+```
 
-*   **Automatización de la Compra (Opcional y con Riesgos):**
-    *   Desarrollar un "bot de compra" que pueda, de forma automática, agregar productos con un margen de ganancia preestablecido al carrito de compra. (Importante: Esta es una funcionalidad avanzada que debe manejarse con extrema precaución para no violar los términos de servicio de los minoristas).
+## ✅ Calidad y Testing
 
-Este plan incremental asegura que el equipo técnico construya una herramienta sólida, comenzando con una base simple y escalando hacia una plataforma de arbitraje poderosa y automatizada.
+El proyecto está configurado con herramientas de calidad de código y testing para mantener un alto estándar.
+
+- **Backend**: Ejecuta los tests con `pytest`.
+- **Frontend**: Ejecuta los tests con `npm run test`.
+- **Ambos**: Utilizan `pre-commit` hooks para formatear y "lintear" el código automáticamente antes de cada commit.
