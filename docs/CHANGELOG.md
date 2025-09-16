@@ -12,6 +12,16 @@ Iniciamos la segunda fase de desarrollo, centrada en implementar las funcionalid
 
 ### Logros Clave:
 
+- **Implementada la Base para Pruebas Automatizadas en el Frontend**:
+  - **Qué**: Se ha configurado el entorno de pruebas para el frontend utilizando `Jest` y `React Testing Library`. Se creó el primer test para el componente `FormularioMinorista.tsx`.
+  - **Por qué**: Esta era la **carencia más crítica** detectada en el análisis inicial. Sin pruebas en el frontend, no tenemos red de seguridad contra regresiones o bugs al modificar la interfaz. Esta adición es un pilar fundamental para garantizar la calidad y la mantenibilidad de la aplicación.
+  - **Cómo**:
+    - Se añadieron las dependencias de desarrollo (`jest`, `@testing-library/react`, etc.) al `package.json`.
+    - Se crearon los archivos de configuración `jest.config.js` y `src/setupTests.ts`.
+    - Se escribió un test inicial (`FormularioMinorista.test.tsx`) que valida el renderizado y la interacción básica del formulario.
+    - Se añadió un script `npm run test` para ejecutar la suite de pruebas.
+  - **Referencia a Guía**: Aborda directamente las secciones **#8 (TDD)** y **#9 (Cobertura y Calidad Mínimas)**.
+
 - **Añadidos Índices Estratégicos en la Base de Datos**:
   - **Qué**: Se ha creado y aplicado una nueva migración (`..._add_strategic_indexes.sql`) que añade índices a las columnas `id_minorista` en `productos`, y a `id_producto`, `fecha_registro` y `id_minorista` en `historial_precios`.
   - **Por qué**: La performance de las consultas es crítica para el éxito de la aplicación. La tabla `historial_precios` crecerá de forma masiva, y sin estos índices, las consultas para obtener el historial de un producto se volverían progresivamente más lentas, degradando la experiencia de usuario y la eficiencia del sistema.

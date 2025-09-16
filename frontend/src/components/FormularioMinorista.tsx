@@ -123,19 +123,3 @@ const FormularioMinorista: React.FC = () => {
 };
 
 export default FormularioMinorista;
-default FormularioMinorista;
-ector CSS para Enlace de Producto (ej. a.product-card)"
-        name="product_link_selector"
-        value={formData.product_link_selector}
-        onChange={handleChange}
-        fullWidth
-        margin="normal"
-      />
-      <Button type="submit" variant="contained" color="primary" disabled={loading} sx={{ mt: 2 }}>
-        {loading ? 'Guardando...' : 'Guardar Minorista'}
-      </Button>
-    </Box>
-  );
-};
-
-export default FormularioMinorista;
