@@ -12,6 +12,12 @@ Iniciamos la segunda fase de desarrollo, centrada en implementar las funcionalid
 
 ### Logros Clave:
 
+- **Añadidos Índices Estratégicos en la Base de Datos**:
+  - **Qué**: Se ha creado y aplicado una nueva migración (`..._add_strategic_indexes.sql`) que añade índices a las columnas `id_minorista` en `productos`, y a `id_producto`, `fecha_registro` y `id_minorista` en `historial_precios`.
+  - **Por qué**: La performance de las consultas es crítica para el éxito de la aplicación. La tabla `historial_precios` crecerá de forma masiva, y sin estos índices, las consultas para obtener el historial de un producto se volverían progresivamente más lentas, degradando la experiencia de usuario y la eficiencia del sistema.
+  - **Cómo**: Se han añadido índices B-tree simples y un índice compuesto (`id_producto`, `fecha_registro DESC`) para optimizar las operaciones de filtrado y ordenación más comunes, siguiendo las mejores prácticas para el diseño de esquemas de bases de datos relacionales.
+  - **Referencia a Guía**: Esta acción aborda directamente la **Sección #20 (Índices Estratégicos & Query Optimization)**, una de las de mayor impacto según la guía.
+
 - **Implementado Endpoint de Monitoreo (`/health`)**:
   - **Qué**: Se ha añadido un nuevo endpoint a la API (`/health`) que realiza un chequeo de salud de los servicios críticos del sistema.
   - **Por qué**: Esto es fundamental para la **observabilidad** del sistema. Nos permite verificar de forma automática y remota si la aplicación está funcionando correctamente, empezando por su componente más vital: la base de datos.
