@@ -110,6 +110,23 @@ def listar_minoristas(
     return minoristas
 
 
+@router.get("/minoristas/buscar", response_model=List[Minorista])
+def buscar_minoristas(
+    q: str, db: Session = Depends(database.get_db)
+):
+    """
+    Busca minoristas por un término de búsqueda en el nombre.
+    Ideal para campos de autocompletado.
+    """
+    minoristas = (
+        db.query(MinoristaModel)
+        .filter(MinoristaModel.nombre.ilike(f"%{q}%"))
+        .limit(20)
+        .all()
+    )
+    return minoristas
+
+
 @router.get("/minoristas/{minorista_id}", response_model=Minorista)
 def obtener_minorista(minorista_id: int, db: Session = Depends(database.get_db)):
     """
@@ -162,9 +179,6 @@ def obtener_historial_precios_producto(
         db.query(HistorialPrecioModel)
         .filter(HistorialPrecioModel.id_producto == producto_id)
         .order_by(HistorialPrecioModel.fecha_registro.desc())
-        .all()
-    )
-    return historiala_registro.desc())
         .all()
     )
     return historial

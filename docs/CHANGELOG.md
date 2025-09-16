@@ -12,6 +12,12 @@ Iniciamos la segunda fase de desarrollo, centrada en implementar las funcionalid
 
 ### Logros Clave:
 
+- **Implementado el Patrón de Catálogo para Minoristas**:
+  - **Qué**: Se ha añadido un nuevo endpoint `GET /gestion-datos/minoristas/buscar` a la API.
+  - **Por qué**: Para mejorar la usabilidad y eficiencia del frontend. Este endpoint permite realizar búsquedas dinámicas de minoristas, lo que es esencial para implementar funcionalidades como campos de autocompletado, en lugar de tener que cargar la lista completa de minoristas.
+  - **Cómo**: El nuevo endpoint acepta un parámetro de consulta `q` y devuelve una lista de minoristas cuyo nombre coincide con el término de búsqueda (insensible a mayúsculas/minúsculas).
+  - **Referencia a Guía**: Implementa la recomendación de la **Sección #23 (Catálogos Pattern - Autocompletado)**.
+
 - **Implementada la Base para Pruebas Automatizadas en el Frontend**:
   - **Qué**: Se ha configurado el entorno de pruebas para el frontend utilizando `Jest` y `React Testing Library`. Se creó el primer test para el componente `FormularioMinorista.tsx`.
   - **Por qué**: Esta era la **carencia más crítica** detectada en el análisis inicial. Sin pruebas en el frontend, no tenemos red de seguridad contra regresiones o bugs al modificar la interfaz. Esta adición es un pilar fundamental para garantizar la calidad y la mantenibilidad de la aplicación.
