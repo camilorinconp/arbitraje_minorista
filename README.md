@@ -46,10 +46,10 @@ pip install -r requirements-dev.txt
 # Copia las variables de Supabase (URL, KEY, DATABASE_URL) a un archivo .env
 
 # 5. Inicia el servidor de desarrollo
-uvicorn main:app --reload
+uvicorn main:app --reload --port 8080
 ```
 
-El backend estará disponible en `http://localhost:8000`.
+El backend estará disponible en `http://localhost:8080`.
 
 ### 2. Configuración del Frontend
 
@@ -66,7 +66,7 @@ npm install
 npm start
 ```
 
-La aplicación de React estará disponible en `http://localhost:3000`.
+La aplicación de React estará disponible en `http://localhost:3030`.
 
 ### 3. Gestión de la Base de Datos (Supabase)
 

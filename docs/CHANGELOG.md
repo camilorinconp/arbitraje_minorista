@@ -12,6 +12,15 @@ Con las funcionalidades críticas y de observabilidad en su lugar, esta fase se 
 
 ### Logros Clave:
 
+- **Finalizado y Probado el Servicio de Scraping (Corazón del Sistema)**:
+  - **Qué**: Se ha refactorizado y probado exhaustivamente el servicio de scraping (`services/scraper.py`).
+  - **Por qué**: El scraper es el componente más crítico y frágil del sistema. Sin pruebas automatizadas, cualquier cambio en la web de un minorista podría romper la recolección de datos de forma silenciosa. Ahora tenemos una red de seguridad que garantiza su fiabilidad.
+  - **Cómo**:
+    1.  Se refactorizó la función principal para desacoplar la lógica de extracción de la gestión del navegador, mejorando drásticamente la testeabilidad.
+    2.  Se creó una suite de tests (`tests/test_scraper.py`) que incluye un test unitario para el endpoint y tests de integración para el servicio.
+    3.  Las pruebas usan `Playwright` para cargar HTML de prueba y verifican tanto el caso de éxito (extracción correcta) como los casos de error (ej. un selector no encontrado).
+  - **Referencia a Guía**: Cumple con las secciones **#8 (TDD)** y **#9 (Calidad Mínima)**, aplicando pruebas a la lógica de negocio más importante.
+
 - **Implementada Validación de Datos a Nivel de Base de Datos (Capa 1)**:
   - **Qué**: Se ha añadido una nueva migración que introduce `CHECK constraints` directamente en las tablas `productos`, `historial_precios` y `minoristas`.
   - **Por qué**: Esto crea una red de seguridad fundamental para la integridad de los datos. Asegura que datos inválidos (como precios negativos) no puedan ser insertados en el sistema, sin importar desde dónde se origine la petición. Es la primera y más fuerte de las 3 capas de validación.
