@@ -5,11 +5,13 @@ import { createMinorista, MinoristaBase } from '../api/gestionDatosApi';
 const FormularioMinorista: React.FC = () => {
   const [formData, setFormData] = useState<MinoristaBase>({
     nombre: '',
-    url_base: '' as any, // Cast para HttpUrl
+    url_base: '',
     activo: true,
     name_selector: '',
     price_selector: '',
     image_selector: '',
+    discovery_url: '',
+    product_link_selector: '',
   });
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
@@ -109,6 +111,22 @@ const FormularioMinorista: React.FC = () => {
         label="Selector CSS para Imagen (ej. img.product-image)"
         name="image_selector"
         value={formData.image_selector}
+        onChange={handleChange}
+        fullWidth
+        margin="normal"
+      />
+      <Button type="submit" variant="contained" color="primary" disabled={loading} sx={{ mt: 2 }}>
+        {loading ? 'Guardando...' : 'Guardar Minorista'}
+      </Button>
+    </Box>
+  );
+};
+
+export default FormularioMinorista;
+default FormularioMinorista;
+ector CSS para Enlace de Producto (ej. a.product-card)"
+        name="product_link_selector"
+        value={formData.product_link_selector}
         onChange={handleChange}
         fullWidth
         margin="normal"

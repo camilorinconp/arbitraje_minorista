@@ -9,6 +9,7 @@ from .core.error_handling import (
     validation_exception_handler,
     generic_exception_handler,
 )
+from .core.scheduler import start_scheduler, stop_scheduler
 from .routes import gestion_datos, scraper
 
 app = FastAPI(
@@ -16,6 +17,16 @@ app = FastAPI(
     version="0.1.0",
     description="API para el seguimiento de productos y oportunidades de arbitraje.",
 )
+
+# --- Ciclo de Vida del Planificador ---
+@app.on_event("startup")
+async def on_startup():
+    start_scheduler()
+
+@app.on_event("shutdown")
+def on_shutdown():
+    stop_scheduler()
+
 
 # --- Middlewares ---
 # Los middlewares se ejecutan en orden inverso de como se añaden.

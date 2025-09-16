@@ -27,6 +27,8 @@ class MinoristaBase(BaseModel):
     name_selector: Optional[str] = None
     price_selector: Optional[str] = None
     image_selector: Optional[str] = None
+    discovery_url: Optional[HttpUrl] = None
+    product_link_selector: Optional[str] = None
 
 
 class Minorista(MinoristaBase):
@@ -160,6 +162,9 @@ def obtener_historial_precios_producto(
         db.query(HistorialPrecioModel)
         .filter(HistorialPrecioModel.id_producto == producto_id)
         .order_by(HistorialPrecioModel.fecha_registro.desc())
+        .all()
+    )
+    return historiala_registro.desc())
         .all()
     )
     return historial

@@ -13,6 +13,8 @@ export interface MinoristaBase {
   name_selector?: string | null;
   price_selector?: string | null;
   image_selector?: string | null;
+  discovery_url?: string | null;
+  product_link_selector?: string | null;
 }
 
 export interface Minorista {
@@ -24,6 +26,8 @@ export interface Minorista {
   name_selector: string | null;
   price_selector: string | null;
   image_selector: string | null;
+  discovery_url: string | null;
+  product_link_selector: string | null;
 }
 
 export interface Producto {

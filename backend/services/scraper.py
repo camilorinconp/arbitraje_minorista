@@ -1,6 +1,6 @@
-# backend/services/scraper.py
-
 import logging
+import asyncio
+from urllib.parse import urljoin
 from playwright.async_api import async_playwright
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
@@ -13,6 +13,45 @@ from ..models.historial_precio import HistorialPrecio
 
 # Configurar logger para este módulo
 logger = logging.getLogger(__name__)
+
+
+async def discover_product_urls(minorista: Minorista) -> list[str]:
+    """
+    Navega a la URL de descubrimiento de un minorista y extrae los enlaces a productos.
+    """
+    if not all([minorista.discovery_url, minorista.product_link_selector]):
+        logger.warning(f"Minorista '{minorista.nombre}' no tiene discovery_url o product_link_selector. Saltando.")
+        return []
+
+    logger.info(f"Descubriendo productos para '{minorista.nombre}' en {minorista.discovery_url}")
+    urls_descubiertas = set()
+
+    async with async_playwright() as p:
+        browser = await p.chromium.launch(headless=True)
+        page = await browser.new_page()
+        try:
+            await page.goto(minorista.discovery_url, wait_until="domcontentloaded")
+            
+            enlaces = await page.locator(minorista.product_link_selector).all()
+            if not enlaces:
+                logger.warning(f"No se encontraron enlaces de producto en {minorista.discovery_url} con el selector '{minorista.product_link_selector}'")
+                return []
+
+            for link_locator in enlaces:
+                href = await link_locator.get_attribute("href")
+                if href:
+                    # Construir URL absoluta si es relativa
+                    full_url = urljoin(minorista.url_base, href)
+                    urls_descubiertas.add(full_url)
+            
+            logger.info(f"Se encontraron {len(urls_descubiertas)} URLs de producto únicas para '{minorista.nombre}'.")
+            return list(urls_descubiertas)
+
+        except Exception as e:
+            logger.error(f"Error descubriendo productos para {minorista.nombre}: {e}", exc_info=True)
+            return []
+        finally:
+            await browser.close()
 
 
 async def scrape_product_data(product_url: str, id_minorista: int, db: Session):

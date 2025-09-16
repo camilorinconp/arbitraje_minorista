@@ -1999,4 +1999,18 @@ ALTER TABLE atencion_primera_infancia
 ADD COLUMN nuevo_campo TEXT DEFAULT NULL;
 
 -- ✅ SAFE: Agregar índice
+
+---
+
+## 🚀 Historial y Decisiones del Proyecto: Arbitraje Minorista [REGISTRO DE PROYECTO]
+
+#### **15 de Septiembre, 2025: Implementación del Motor de Descubrimiento Automático (Fase 2)**
+
+- **Objetivo**: Transformar la herramienta de una operación manual a un motor de scraping autónomo.
+- **Decisiones Clave**:
+    1.  **Extensión del Modelo `Minorista`**: Se añadieron los campos `discovery_url` (para la página de categorías/ofertas) y `product_link_selector` (para identificar los enlaces a productos). Esta decisión mantiene la flexibilidad, permitiendo que cada minorista tenga su propia estrategia de descubrimiento.
+    2.  **Lógica de Scheduler Robusta**: El `scraping_job` se implementó para ser resiliente. Un error en el scraping de un único producto se captura y se registra, pero no detiene el proceso general, asegurando que el resto de la cola de trabajo se complete.
+    3.  **Separación de Responsabilidades**: La lógica de descubrir URLs se encapsuló en una nueva función `discover_product_urls` dentro del servicio de scraper, manteniendo el `scheduler` limpio y enfocado en la orquestación.
+- **Resultado**: El backend ahora puede descubrir y scrapear productos de forma autónoma y periódica, cumpliendo el objetivo principal de la Fase 2.
+
 ```

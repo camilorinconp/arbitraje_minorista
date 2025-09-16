@@ -5,6 +5,7 @@ playwright
 supabase
 psycopg2-binary
 python-dotenv
+apscheduler
 
 # Herramientas de calidad de código
 black

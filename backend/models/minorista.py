@@ -19,6 +19,8 @@ class Minorista(Base):
     name_selector = Column(String, nullable=True)
     price_selector = Column(String, nullable=True)
     image_selector = Column(String, nullable=True)
+    discovery_url = Column(String, nullable=True)
+    product_link_selector = Column(String, nullable=True)
 
     # Relaciones
     productos = relationship("Producto", back_populates="minorista")
