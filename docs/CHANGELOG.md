@@ -12,6 +12,11 @@ Con las funcionalidades críticas y de observabilidad en su lugar, esta fase se 
 
 ### Logros Clave:
 
+- **Creada la Página Principal del Dashboard para Visualización de Datos**:
+  - **Qué**: Se ha creado un nuevo componente de página `Dashboard.tsx` y se ha establecido como la ruta principal de la aplicación.
+  - **Por qué**: Para proporcionar una vista centralizada y unificada para la visualización de datos. Esto mejora la estructura de la aplicación, pasando de mostrar un simple componente a tener una página principal dedicada que puede albergar múltiples visualizaciones y controles en el futuro.
+  - **Cómo**: La nueva página `Dashboard.tsx` integra el componente `ListaProductos.tsx` existente. El enrutador principal en `App.tsx` fue actualizado para que la ruta `/` ahora renderice esta nueva página.
+
 - **Automatizada la Adquisición de Datos con un Scheduler**:
   - **Qué**: Se ha implementado y activado el scheduler (`APScheduler`) que ejecuta el proceso de scraping de forma automática y periódica.
   - **Por qué**: Esto transforma la aplicación de una herramienta manual a un sistema de monitoreo autónomo. La recolección de datos ahora es constante y desatendida, asegurando que la información esté siempre actualizada.
