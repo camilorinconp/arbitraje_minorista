@@ -4,6 +4,25 @@ Este documento registra los cambios significativos, decisiones y progreso del pr
 
 ---
 
+## 🗓️ 15 de Septiembre, 2025 (Tarde) - **FASE 2: Observabilidad y Robustez Funcional**
+
+**Estado**: 🚧 **En Progreso**
+
+Iniciamos la segunda fase de desarrollo, centrada en implementar las funcionalidades críticas y las capacidades de monitoreo que nos permitirán operar con confianza.
+
+### Logros Clave:
+
+- **Implementado Endpoint de Monitoreo (`/health`)**:
+  - **Qué**: Se ha añadido un nuevo endpoint a la API (`/health`) que realiza un chequeo de salud de los servicios críticos del sistema.
+  - **Por qué**: Esto es fundamental para la **observabilidad** del sistema. Nos permite verificar de forma automática y remota si la aplicación está funcionando correctamente, empezando por su componente más vital: la base de datos.
+  - **Cómo**:
+    - Se creó un `HealthChecker` en `backend/core/monitoring.py` que contiene la lógica para verificar la conexión y velocidad de respuesta de la base de datos Supabase.
+    - Se expuso esta lógica a través de una nueva ruta en `backend/routes/monitoring.py`.
+    - El endpoint devuelve un estado `200 OK` si todo funciona, o un `503 Service Unavailable` si un componente crítico ha fallado, facilitando la integración con sistemas de monitoreo automatizado en el futuro.
+  - **Referencia a Guía**: Esta implementación sigue las directrices de la **Sección #19 (Performance Monitoring & Health Checks)** del documento de mejores prácticas.
+
+---
+
 ## 🗓️ 15 de Septiembre, 2025 - **FASE 1: Cimientos de Calidad y Robustez**
 
 **Estado**: ✅ **Completada**

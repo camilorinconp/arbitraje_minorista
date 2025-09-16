@@ -10,7 +10,7 @@ from .core.error_handling import (
     generic_exception_handler,
 )
 from .core.scheduler import start_scheduler, stop_scheduler
-from .routes import gestion_datos, scraper
+from .routes import gestion_datos, scraper, monitoring
 
 app = FastAPI(
     title="Arbitraje Minorista API",
@@ -52,3 +52,4 @@ def read_root():
 # --- Routers ---
 app.include_router(gestion_datos.router)
 app.include_router(scraper.router)
+app.include_router(monitoring.router)
