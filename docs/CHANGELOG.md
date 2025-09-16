@@ -12,6 +12,12 @@ Con las funcionalidades críticas y de observabilidad en su lugar, esta fase se 
 
 ### Logros Clave:
 
+- **Automatizada la Adquisición de Datos con un Scheduler**:
+  - **Qué**: Se ha implementado y activado el scheduler (`APScheduler`) que ejecuta el proceso de scraping de forma automática y periódica.
+  - **Por qué**: Esto transforma la aplicación de una herramienta manual a un sistema de monitoreo autónomo. La recolección de datos ahora es constante y desatendida, asegurando que la información esté siempre actualizada.
+  - **Cómo**: La función `scraping_job` ahora contiene la lógica para iterar sobre todos los minoristas activos, descubrir las URLs de sus productos y ejecutar el scraper para cada uno. El scheduler se inicia junto con la aplicación de FastAPI y ejecuta este trabajo cada 60 minutos.
+  - **Referencia a Guía**: Cumple con la tarea de **Automatización** descrita en la Fase 2 del plan original del proyecto.
+
 - **Finalizado y Probado el Servicio de Scraping (Corazón del Sistema)**:
   - **Qué**: Se ha refactorizado y probado exhaustivamente el servicio de scraping (`services/scraper.py`).
   - **Por qué**: El scraper es el componente más crítico y frágil del sistema. Sin pruebas automatizadas, cualquier cambio en la web de un minorista podría romper la recolección de datos de forma silenciosa. Ahora tenemos una red de seguridad que garantiza su fiabilidad.
