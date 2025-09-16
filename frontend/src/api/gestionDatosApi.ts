@@ -56,20 +56,29 @@ export interface HistorialPrecio {
 // Productos
 export const getProductos = async (): Promise<Producto[]> => {
   try {
-    const response = await axios.get<Producto[]>(`${API_BASE_URL}/gestion-datos/productos/`);
+    const response = await axios.get<Producto[]>(
+      `${API_BASE_URL}/gestion-datos/productos/`
+    );
     return response.data;
   } catch (error) {
-    console.error("Error al obtener productos:", error);
+    console.error('Error al obtener productos:', error);
     throw error;
   }
 };
 
-export const getHistorialPreciosProducto = async (productoId: number): Promise<HistorialPrecio[]> => {
+export const getHistorialPreciosProducto = async (
+  productoId: number
+): Promise<HistorialPrecio[]> => {
   try {
-    const response = await axios.get<HistorialPrecio[]>(`${API_BASE_URL}/gestion-datos/productos/${productoId}/historial-precios`);
+    const response = await axios.get<HistorialPrecio[]>(
+      `${API_BASE_URL}/gestion-datos/productos/${productoId}/historial-precios`
+    );
     return response.data;
   } catch (error) {
-    console.error(`Error al obtener historial de precios para el producto ${productoId}:`, error);
+    console.error(
+      `Error al obtener historial de precios para el producto ${productoId}:`,
+      error
+    );
     throw error;
   }
 };
@@ -77,27 +86,40 @@ export const getHistorialPreciosProducto = async (productoId: number): Promise<H
 // Minoristas
 export const getMinoristas = async (): Promise<Minorista[]> => {
   try {
-    const response = await axios.get<Minorista[]>(`${API_BASE_URL}/gestion-datos/minoristas/`);
+    const response = await axios.get<Minorista[]>(
+      `${API_BASE_URL}/gestion-datos/minoristas/`
+    );
     return response.data;
   } catch (error) {
-    console.error("Error al obtener minoristas:", error);
+    console.error('Error al obtener minoristas:', error);
     throw error;
   }
 };
 
-export const createMinorista = async (minoristaData: MinoristaBase): Promise<Minorista> => {
+export const createMinorista = async (
+  minoristaData: MinoristaBase
+): Promise<Minorista> => {
   try {
-    const response = await axios.post<Minorista>(`${API_BASE_URL}/gestion-datos/minoristas/`, minoristaData);
+    const response = await axios.post<Minorista>(
+      `${API_BASE_URL}/gestion-datos/minoristas/`,
+      minoristaData
+    );
     return response.data;
   } catch (error) {
-    console.error("Error al crear minorista:", error);
+    console.error('Error al crear minorista:', error);
     throw error;
   }
 };
 
-export const updateMinorista = async (id: number, minoristaData: MinoristaBase): Promise<Minorista> => {
+export const updateMinorista = async (
+  id: number,
+  minoristaData: MinoristaBase
+): Promise<Minorista> => {
   try {
-    const response = await axios.put<Minorista>(`${API_BASE_URL}/gestion-datos/minoristas/${id}`, minoristaData);
+    const response = await axios.put<Minorista>(
+      `${API_BASE_URL}/gestion-datos/minoristas/${id}`,
+      minoristaData
+    );
     return response.data;
   } catch (error) {
     console.error(`Error al actualizar minorista con ID ${id}:`, error);
@@ -115,15 +137,21 @@ export const deleteMinorista = async (id: number): Promise<void> => {
 };
 
 // Scraper
-export const runScraper = async (product_url: string, id_minorista: number): Promise<Producto> => {
+export const runScraper = async (
+  product_url: string,
+  id_minorista: number
+): Promise<Producto> => {
   try {
-    const response = await axios.post<Producto>(`${API_BASE_URL}/scraper/run/`, {
-      product_url,
-      id_minorista,
-    });
+    const response = await axios.post<Producto>(
+      `${API_BASE_URL}/scraper/run/`,
+      {
+        product_url,
+        id_minorista,
+      }
+    );
     return response.data;
   } catch (error) {
-    console.error("Error al ejecutar el scraper:", error);
+    console.error('Error al ejecutar el scraper:', error);
     throw error;
   }
 };

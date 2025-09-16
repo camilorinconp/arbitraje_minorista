@@ -9,6 +9,7 @@ router = APIRouter(
     tags=["Monitoring"],
 )
 
+
 @router.get("/", summary="Realiza un chequeo de salud completo del sistema")
 async def health_check(response: Response):
     """
@@ -21,8 +22,8 @@ async def health_check(response: Response):
     - **503 Service Unavailable**: Si algún sistema crítico no está saludable.
     """
     health_report = await HealthChecker.run_checks()
-    
+
     if health_report["overall_status"] == "unhealthy":
         response.status_code = status.HTTP_503_SERVICE_UNAVAILABLE
-    
+
     return health_report

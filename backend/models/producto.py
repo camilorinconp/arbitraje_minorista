@@ -1,6 +1,14 @@
 # backend/models/producto.py
 
-from sqlalchemy import Column, Integer, BigInteger, String, Numeric, DateTime, ForeignKey
+from sqlalchemy import (
+    Column,
+    Integer,
+    BigInteger,
+    String,
+    Numeric,
+    DateTime,
+    ForeignKey,
+)
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from ..services.database import Base
@@ -19,7 +27,7 @@ class Producto(Base):
 
     # Nuevas columnas
     id_minorista = Column(
-        BigInteger, ForeignKey("minoristas.id"), nullable=True
+        Integer, ForeignKey("minoristas.id"), nullable=True
     )  # Será NOT NULL una vez que tengamos minoristas
     identificador_producto = Column(String, nullable=True, index=True)
 

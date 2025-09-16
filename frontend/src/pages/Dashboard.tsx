@@ -1,151 +1,286 @@
 // frontend/src/pages/Dashboard.tsx
 
-import React, { useState } from 'react';
-import { Box, Container, Typography, Button, Dialog, DialogActions, DialogContent, DialogTitle, TextField, FormControl, InputLabel, Select, MenuItem, Alert } from '@mui/material';
+import React from 'react';
+import {
+  Box,
+  Container,
+  Typography,
+  Button,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  TextField,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  Alert,
+  Snackbar,
+} from '@mui/material';
 import ListaProductos from '../components/ListaProductos';
-import { createMinorista, runScraper, getMinoristas, Minorista } from '../api/gestionDatosApi';
+import {
+  useErrorHandling,
+  useMinoristas,
+  useScraper,
+  useDialogs,
+  useFormData,
+} from '../hooks';
 
 const Dashboard: React.FC = () => {
-  const [minoristas, setMinoristas] = useState<Minorista[]>([]);
-  const [error, setError] = useState<string | null>(null);
-  const [openMinoristaDialog, setOpenMinoristaDialog] = useState<boolean>(false);
-  const [nuevoMinoristaNombre, setNuevoMinoristaNombre] = useState<string>('');
-  const [nuevoMinoristaUrl, setNuevoMinoristaUrl] = useState<string>('');
-  const [openScraperDialog, setOpenScraperDialog] = useState<boolean>(false);
-  const [urlProductoScrape, setUrlProductoScrape] = useState<string>('');
-  const [minoristaSeleccionadoId, setMinoristaSeleccionadoId] = useState<number | ''>('');
+  // Custom hooks para separar la lógica
+  const {
+    error,
+    successMessage,
+    handleError,
+    showSuccess,
+    clearError,
+    clearSuccess,
+  } = useErrorHandling();
+  const {
+    minoristas,
+    isLoading: minoristaLoading,
+    addMinorista,
+  } = useMinoristas();
+  const { isScrapingLoading, executeScraper } = useScraper();
+  const {
+    openMinoristaDialog,
+    openScraperDialog,
+    openMinoristaForm,
+    closeMinoristaForm,
+    openScraperForm,
+    closeScraperForm,
+  } = useDialogs();
+  const {
+    nuevoMinoristaNombre,
+    setNuevoMinoristaNombre,
+    nuevoMinoristaUrl,
+    setNuevoMinoristaUrl,
+    urlProductoScrape,
+    setUrlProductoScrape,
+    minoristaSeleccionadoId,
+    setMinoristaSeleccionadoId,
+    resetMinoristaForm,
+    resetScraperForm,
+  } = useFormData();
 
+  // Determinar si hay alguna operación cargando
+  const isLoading = minoristaLoading || isScrapingLoading;
+
+  // Manejadores de eventos
   const handleOpenScraperDialog = async () => {
     try {
-      const minoristasData = await getMinoristas();
-      setMinoristas(minoristasData);
-      setOpenScraperDialog(true);
+      openScraperForm();
     } catch (err) {
-      setError('Error al cargar la lista de minoristas para el scraper.');
+      handleError(err, 'Error al abrir el diálogo del scraper.');
     }
   };
 
   const handleCrearMinorista = async () => {
+    if (!nuevoMinoristaNombre.trim()) {
+      handleError(
+        { message: 'El nombre del minorista es requerido.' },
+        'Validation error'
+      );
+      return;
+    }
+    if (!nuevoMinoristaUrl.trim()) {
+      handleError(
+        { message: 'La URL base del minorista es requerida.' },
+        'Validation error'
+      );
+      return;
+    }
+
     try {
-      await createMinorista({ nombre: nuevoMinoristaNombre, url_base: nuevoMinoristaUrl });
-      setOpenMinoristaDialog(false);
-      setNuevoMinoristaNombre('');
-      setNuevoMinoristaUrl('');
-      // Aquí podríamos usar react-query para invalidar y recargar datos automáticamente
+      await addMinorista(nuevoMinoristaNombre, nuevoMinoristaUrl);
+      closeMinoristaForm();
+      resetMinoristaForm();
+      showSuccess('Minorista creado exitosamente.');
     } catch (err) {
-      setError('Error al crear minorista.');
-      console.error(err);
+      handleError(err, 'Error al crear minorista.');
     }
   };
 
   const handleActivarScraper = async () => {
     if (minoristaSeleccionadoId === '' || !urlProductoScrape) {
-      alert('Por favor, selecciona un minorista y proporciona una URL de producto.');
+      handleError(
+        {
+          message:
+            'Por favor, selecciona un minorista y proporciona una URL de producto.',
+        },
+        'Validation error'
+      );
       return;
     }
+
     try {
-      await runScraper(urlProductoScrape, minoristaSeleccionadoId as number);
-      setOpenScraperDialog(false);
-      setUrlProductoScrape('');
-      setMinoristaSeleccionadoId('');
-      // Aquí podríamos usar react-query para invalidar y recargar datos automáticamente
+      const producto = await executeScraper(
+        urlProductoScrape,
+        minoristaSeleccionadoId as number
+      );
+      closeScraperForm();
+      resetScraperForm();
+      showSuccess(
+        `Producto scrapeado exitosamente: ${producto.name} - $${producto.price}`
+      );
     } catch (err) {
-      setError('Error al activar el scraper.');
-      console.error(err);
+      handleError(err, 'Error al ejecutar scraper.');
     }
   };
 
   return (
-    <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <Box>
-          <Typography variant="h4" component="h1" gutterBottom>
-            Dashboard de Productos
-          </Typography>
-          <Typography variant="subtitle1" color="text.secondary">
-            Aquí se muestran los productos rastreados y sus precios actuales.
-          </Typography>
-        </Box>
-        <Box sx={{ display: 'flex', gap: 2 }}>
-          <Button variant="outlined" onClick={() => setOpenMinoristaDialog(true)}>
-            Añadir Minorista
-          </Button>
-          <Button variant="contained" onClick={handleOpenScraperDialog}>
-            Scrapear Producto
-          </Button>
-        </Box>
-      </Box>
+    <Container maxWidth="lg">
+      <Box sx={{ mt: 4, mb: 4 }}>
+        <Typography variant="h3" component="h1" gutterBottom>
+          Dashboard de Arbitraje de Precios
+        </Typography>
+        <Typography variant="h6" color="text.secondary" paragraph>
+          Gestiona minoristas y ejecuta scraping de productos para encontrar las
+          mejores oportunidades de arbitraje.
+        </Typography>
 
-      {error && <Alert severity="error" sx={{ mt: 2 }}>{error}</Alert>}
+        <Box sx={{ mb: 3, display: 'flex', gap: 2 }}>
+          <Button
+            variant="contained"
+            color="primary"
+            onClick={openMinoristaForm}
+            disabled={isLoading}
+          >
+            Crear Minorista
+          </Button>
+          <Button
+            variant="outlined"
+            color="secondary"
+            onClick={handleOpenScraperDialog}
+            disabled={isLoading}
+          >
+            Ejecutar Scraper
+          </Button>
+        </Box>
 
-      <Box sx={{ mt: 4 }}>
         <ListaProductos />
-      </Box>
 
-      {/* Diálogo para Añadir Minorista */}
-      <Dialog open={openMinoristaDialog} onClose={() => setOpenMinoristaDialog(false)}>
-        <DialogTitle>Añadir Nuevo Minorista</DialogTitle>
-        <DialogContent>
-          <TextField
-            autoFocus
-            margin="dense"
-            label="Nombre del Minorista"
-            type="text"
-            fullWidth
-            variant="standard"
-            value={nuevoMinoristaNombre}
-            onChange={(e) => setNuevoMinoristaNombre(e.target.value)}
-          />
-          <TextField
-            margin="dense"
-            label="URL Base del Minorista"
-            type="url"
-            fullWidth
-            variant="standard"
-            value={nuevoMinoristaUrl}
-            onChange={(e) => setNuevoMinoristaUrl(e.target.value)}
-          />
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setOpenMinoristaDialog(false)}>Cancelar</Button>
-          <Button onClick={handleCrearMinorista}>Crear</Button>
-        </DialogActions>
-      </Dialog>
-
-      {/* Diálogo para Activar Scraper */}
-      <Dialog open={openScraperDialog} onClose={() => setOpenScraperDialog(false)}>
-        <DialogTitle>Activar Scraper Manual</DialogTitle>
-        <DialogContent>
-          <FormControl fullWidth margin="dense" sx={{ mt: 2 }}>
-            <InputLabel id="minorista-select-label">Minorista</InputLabel>
-            <Select
-              labelId="minorista-select-label"
-              value={minoristaSeleccionadoId}
-              label="Minorista"
-              onChange={(e) => setMinoristaSeleccionadoId(e.target.value as number)}
+        {/* Dialog para crear minorista */}
+        <Dialog
+          open={openMinoristaDialog}
+          onClose={closeMinoristaForm}
+          maxWidth="sm"
+          fullWidth
+        >
+          <DialogTitle>Crear Nuevo Minorista</DialogTitle>
+          <DialogContent>
+            <TextField
+              autoFocus
+              margin="dense"
+              label="Nombre del Minorista"
+              fullWidth
+              variant="outlined"
+              value={nuevoMinoristaNombre}
+              onChange={(e) => setNuevoMinoristaNombre(e.target.value)}
+              sx={{ mb: 2 }}
+            />
+            <TextField
+              margin="dense"
+              label="URL Base"
+              fullWidth
+              variant="outlined"
+              value={nuevoMinoristaUrl}
+              onChange={(e) => setNuevoMinoristaUrl(e.target.value)}
+              placeholder="https://ejemplo.com"
+            />
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={closeMinoristaForm} disabled={isLoading}>
+              Cancelar
+            </Button>
+            <Button
+              onClick={handleCrearMinorista}
+              disabled={isLoading}
+              variant="contained"
             >
-              {minoristas.map((minorista) => (
-                <MenuItem key={minorista.id} value={minorista.id}>
-                  {minorista.nombre}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-          <TextField
-            margin="dense"
-            label="URL del Producto a Scrapear"
-            type="url"
-            fullWidth
-            variant="standard"
-            value={urlProductoScrape}
-            onChange={(e) => setUrlProductoScrape(e.target.value)}
-          />
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setOpenScraperDialog(false)}>Cancelar</Button>
-          <Button onClick={handleActivarScraper}>Scrapear</Button>
-        </DialogActions>
-      </Dialog>
+              Crear
+            </Button>
+          </DialogActions>
+        </Dialog>
+
+        {/* Dialog para scraper */}
+        <Dialog
+          open={openScraperDialog}
+          onClose={closeScraperForm}
+          maxWidth="sm"
+          fullWidth
+        >
+          <DialogTitle>Ejecutar Scraper</DialogTitle>
+          <DialogContent>
+            <FormControl fullWidth sx={{ mb: 2, mt: 1 }}>
+              <InputLabel>Minorista</InputLabel>
+              <Select
+                value={minoristaSeleccionadoId}
+                label="Minorista"
+                onChange={(e) =>
+                  setMinoristaSeleccionadoId(e.target.value as number)
+                }
+              >
+                {minoristas.map((minorista) => (
+                  <MenuItem key={minorista.id} value={minorista.id}>
+                    {minorista.nombre}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+            <TextField
+              margin="dense"
+              label="URL del Producto"
+              fullWidth
+              variant="outlined"
+              value={urlProductoScrape}
+              onChange={(e) => setUrlProductoScrape(e.target.value)}
+              placeholder="https://ejemplo.com/producto"
+            />
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={closeScraperForm} disabled={isLoading}>
+              Cancelar
+            </Button>
+            <Button
+              onClick={handleActivarScraper}
+              disabled={isLoading}
+              variant="contained"
+            >
+              Ejecutar
+            </Button>
+          </DialogActions>
+        </Dialog>
+
+        {/* Mensajes de error */}
+        <Snackbar
+          open={!!error}
+          autoHideDuration={8000}
+          onClose={clearError}
+          anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+        >
+          <Alert onClose={clearError} severity="error" sx={{ width: '100%' }}>
+            {error}
+          </Alert>
+        </Snackbar>
+
+        {/* Mensajes de éxito */}
+        <Snackbar
+          open={!!successMessage}
+          autoHideDuration={5000}
+          onClose={clearSuccess}
+          anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+        >
+          <Alert
+            onClose={clearSuccess}
+            severity="success"
+            sx={{ width: '100%' }}
+          >
+            {successMessage}
+          </Alert>
+        </Snackbar>
+      </Box>
     </Container>
   );
 };

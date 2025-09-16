@@ -1,15 +1,19 @@
 # backend/tests/test_scraper.py
 
+import asyncio
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-from playwright.sync_api import sync_playwright, Page, Route
-import os
+from unittest.mock import patch, MagicMock
+from playwright.async_api import async_playwright
 
-from ..main import app
-from ..services.database import get_db, Base
-from ..models.minorista import Minorista
+from backend.main import app
+from backend.services.database import get_db, Base
+from backend.models.minorista import Minorista
+from backend.services.scraper import scrape_product_from_page
+from backend.models.producto import Producto
+from backend.models.historial_precio import HistorialPrecio
 
 # --- Configuración de la Base de Datos de Pruebas ---
 
@@ -24,6 +28,7 @@ TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engin
 # Crear las tablas en la base de datos de prueba
 Base.metadata.create_all(bind=engine)
 
+
 def override_get_db():
     try:
         db = TestingSessionLocal()
@@ -31,12 +36,14 @@ def override_get_db():
     finally:
         db.close()
 
+
 # Sobrescribir la dependencia get_db para usar la base de datos de prueba
 app.dependency_overrides[get_db] = override_get_db
 
 client = TestClient(app)
 
 # --- Fixtures de Pytest ---
+
 
 @pytest.fixture(scope="function")
 def db_session():
@@ -48,6 +55,7 @@ def db_session():
         yield db
     finally:
         db.close()
+
 
 @pytest.fixture(scope="function")
 def test_minorista(db_session):
@@ -64,6 +72,7 @@ def test_minorista(db_session):
     db_session.commit()
     db_session.refresh(minorista)
     return minorista
+
 
 # --- HTML de Prueba ---
 
@@ -84,12 +93,10 @@ HTML_CONTENT = """
 </html>
 """
 
-import asyncio
-from unittest.mock import patch, MagicMock
-
 # --- Pruebas del Scraper ---
 
-@patch('backend.services.scraper.scrape_product_data')
+
+@patch("backend.services.scraper.scrape_product_data")
 def test_endpoint_activar_scraper(mock_scrape_product_data, db_session, test_minorista):
     """
     Prueba el endpoint /scraper/run/ de forma aislada.
@@ -136,10 +143,6 @@ async def test_servicio_scrape_integracion_exitosa(db_session, test_minorista):
     Prueba la función de servicio `scrape_product_from_page` en integración.
     Usa Playwright para lanzar un navegador que carga HTML mockeado vía intercepción de red.
     """
-    from ..services.scraper import scrape_product_from_page
-    from ..models.producto import Producto
-    from ..models.historial_precio import HistorialPrecio
-
     TEST_URL = "http://test-site.com/producto-1"
 
     async with async_playwright() as p:
@@ -147,14 +150,13 @@ async def test_servicio_scrape_integracion_exitosa(db_session, test_minorista):
         page = await browser.new_page()
 
         # Interceptar la petición a la URL de prueba y responder con nuestro HTML
-        await page.route(TEST_URL, lambda route: route.fulfill(status=200, body=HTML_CONTENT))
+        await page.route(
+            TEST_URL, lambda route: route.fulfill(status=200, body=HTML_CONTENT)
+        )
 
         # Ejecutar la lógica de scraping directamente con la página controlada
         producto_resultado = await scrape_product_from_page(
-            page=page, 
-            product_url=TEST_URL, 
-            minorista=test_minorista, 
-            db=db_session
+            page=page, product_url=TEST_URL, minorista=test_minorista, db=db_session
         )
 
         await browser.close()
@@ -166,11 +168,17 @@ async def test_servicio_scrape_integracion_exitosa(db_session, test_minorista):
     assert producto_resultado.image_url == "http://test-site.com/images/producto.jpg"
 
     # Verificar la creación en la base de datos
-    producto_db = db_session.query(Producto).filter(Producto.product_url == TEST_URL).first()
+    producto_db = (
+        db_session.query(Producto).filter(Producto.product_url == TEST_URL).first()
+    )
     assert producto_db is not None
     assert producto_db.name == "Producto de Prueba Increíble"
 
-    historial_db = db_session.query(HistorialPrecio).filter(HistorialPrecio.id_producto == producto_db.id).first()
+    historial_db = (
+        db_session.query(HistorialPrecio)
+        .filter(HistorialPrecio.id_producto == producto_db.id)
+        .first()
+    )
     assert historial_db is not None
     assert historial_db.precio == 1234.56
 
@@ -181,8 +189,6 @@ async def test_servicio_scrape_precio_no_encontrado(db_session, test_minorista):
     Prueba que el scraper maneja correctamente el caso donde el selector de precio no encuentra nada.
     Debería asignar un precio de 0.00.
     """
-    from ..services.scraper import scrape_product_from_page
-
     TEST_URL = "http://test-site.com/producto-sin-precio"
     HTML_SIN_PRECIO = """
     <!DOCTYPE html>
@@ -196,13 +202,12 @@ async def test_servicio_scrape_precio_no_encontrado(db_session, test_minorista):
     async with async_playwright() as p:
         browser = await p.chromium.launch()
         page = await browser.new_page()
-        await page.route(TEST_URL, lambda route: route.fulfill(status=200, body=HTML_SIN_PRECIO))
+        await page.route(
+            TEST_URL, lambda route: route.fulfill(status=200, body=HTML_SIN_PRECIO)
+        )
 
         producto_resultado = await scrape_product_from_page(
-            page=page, 
-            product_url=TEST_URL, 
-            minorista=test_minorista, 
-            db=db_session
+            page=page, product_url=TEST_URL, minorista=test_minorista, db=db_session
         )
 
         await browser.close()

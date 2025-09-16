@@ -28,21 +28,33 @@ describe('FormularioMinorista', () => {
     expect(screen.getByLabelText(/Nombre del Minorista/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/URL Base/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/Activo para Scrapeo/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/Selector CSS para Nombre/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/Selector CSS para Precio/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/Selector CSS para Imagen/i)).toBeInTheDocument();
+    expect(
+      screen.getByLabelText(/Selector CSS para Nombre/i)
+    ).toBeInTheDocument();
+    expect(
+      screen.getByLabelText(/Selector CSS para Precio/i)
+    ).toBeInTheDocument();
+    expect(
+      screen.getByLabelText(/Selector CSS para Imagen/i)
+    ).toBeInTheDocument();
 
     // Verificar que el botón de envío exista
-    expect(screen.getByRole('button', { name: /Guardar Minorista/i })).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: /Guardar Minorista/i })
+    ).toBeInTheDocument();
   });
 
   test('debe permitir al usuario escribir en los campos de texto', () => {
     render(<FormularioMinorista onSave={mockOnSave} onCancel={mockOnCancel} />);
 
-    const nombreInput = screen.getByLabelText(/Nombre del Minorista/i) as HTMLInputElement;
+    const nombreInput = screen.getByLabelText(
+      /Nombre del Minorista/i
+    ) as HTMLInputElement;
     const urlInput = screen.getByLabelText(/URL Base/i) as HTMLInputElement;
 
-    fireEvent.change(nombreInput, { target: { value: 'Nuevo Minorista de Prueba' } });
+    fireEvent.change(nombreInput, {
+      target: { value: 'Nuevo Minorista de Prueba' },
+    });
     fireEvent.change(urlInput, { target: { value: 'https://test.com' } });
 
     expect(nombreInput.value).toBe('Nuevo Minorista de Prueba');
@@ -52,7 +64,9 @@ describe('FormularioMinorista', () => {
   test('el switch de "Activo" debe poder cambiarse', () => {
     render(<FormularioMinorista onSave={mockOnSave} onCancel={mockOnCancel} />);
 
-    const switchInput = screen.getByLabelText(/Activo para Scrapeo/i) as HTMLInputElement;
+    const switchInput = screen.getByLabelText(
+      /Activo para Scrapeo/i
+    ) as HTMLInputElement;
 
     // Por defecto está activado
     expect(switchInput.checked).toBe(true);

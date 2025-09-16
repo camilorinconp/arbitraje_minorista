@@ -3,21 +3,26 @@
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { getProductos } from '../api/gestionDatosApi';
-import { 
-  Typography, 
-  CircularProgress, 
-  Alert, 
-  List, 
-  ListItem, 
-  ListItemText, 
-  ListItemAvatar, 
-  Avatar, 
-  Divider, 
-  Box
+import {
+  Typography,
+  CircularProgress,
+  Alert,
+  List,
+  ListItem,
+  ListItemText,
+  ListItemAvatar,
+  Avatar,
+  Divider,
+  Box,
 } from '@mui/material';
 
 const ListaProductos: React.FC = () => {
-  const { data: productos, error, isLoading, isError } = useQuery({
+  const {
+    data: productos,
+    error,
+    isLoading,
+    isError,
+  } = useQuery({
     queryKey: ['productos'],
     queryFn: getProductos,
   });
@@ -44,35 +49,60 @@ const ListaProductos: React.FC = () => {
         Productos Rastreados
       </Typography>
       {productos?.length === 0 ? (
-        <Alert severity="info">No hay productos rastreados aún. Intenta scrapear un producto para empezar.</Alert>
+        <Alert severity="info">
+          No hay productos rastreados aún. Intenta scrapear un producto para
+          empezar.
+        </Alert>
       ) : (
         <List>
           {productos?.map((producto) => (
             <React.Fragment key={producto.id}>
               <ListItem alignItems="flex-start">
                 <ListItemAvatar>
-                  <Avatar alt={producto.name} src={producto.image_url || undefined} />
+                  <Avatar
+                    alt={producto.name}
+                    src={producto.image_url || undefined}
+                  />
                 </ListItemAvatar>
                 <ListItemText
                   primary={
                     <Typography variant="h6">
-                      <a href={producto.product_url} target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'none', color: 'inherit' }}>
+                      <a
+                        href={producto.product_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={{ textDecoration: 'none', color: 'inherit' }}
+                      >
                         {producto.name}
                       </a>
                     </Typography>
                   }
                   secondary={
                     <Box>
-                      <Typography component="span" variant="body2" color="text.primary" sx={{ fontWeight: 'bold' }}>
+                      <Typography
+                        component="span"
+                        variant="body2"
+                        color="text.primary"
+                        sx={{ fontWeight: 'bold' }}
+                      >
                         Precio: ${producto.price.toFixed(2)}
                       </Typography>
                       <br />
-                      <Typography component="span" variant="body2" color="text.secondary">
+                      <Typography
+                        component="span"
+                        variant="body2"
+                        color="text.secondary"
+                      >
                         Minorista: {producto.minorista?.nombre || 'Desconocido'}
                       </Typography>
                       <br />
-                      <Typography component="span" variant="body2" color="text.secondary">
-                        Último rastreo: {new Date(producto.last_scraped_at).toLocaleString()}
+                      <Typography
+                        component="span"
+                        variant="body2"
+                        color="text.secondary"
+                      >
+                        Último rastreo:{' '}
+                        {new Date(producto.last_scraped_at).toLocaleString()}
                       </Typography>
                     </Box>
                   }

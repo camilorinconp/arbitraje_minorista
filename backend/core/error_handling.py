@@ -12,12 +12,13 @@ from fastapi.responses import JSONResponse
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("api.errors")
 
+
 async def http_exception_handler(request: Request, exc: Exception):
     """Manejador para excepciones HTTP generales."""
     correlation_id = request.state.correlation_id
     logger.error(
         f"HTTP Exception: {exc.status_code} {exc.detail}",
-        extra={"correlation_id": correlation_id, "path": request.url.path}
+        extra={"correlation_id": correlation_id, "path": request.url.path},
     )
     return JSONResponse(
         status_code=exc.status_code,
@@ -28,21 +29,22 @@ async def http_exception_handler(request: Request, exc: Exception):
                 "message": exc.detail,
                 "status_code": exc.status_code,
                 "correlation_id": correlation_id,
-            }
-        }
+            },
+        },
     )
+
 
 async def validation_exception_handler(request: Request, exc: RequestValidationError):
     """Manejador para errores de validación de Pydantic."""
     correlation_id = request.state.correlation_id
     errors = []
     for error in exc.errors():
-        field = ".".join(str(loc) for loc in error["loc"][1:]) # Omitir 'body'
+        field = ".".join(str(loc) for loc in error["loc"][1:])  # Omitir 'body'
         errors.append({"field": field, "message": error["msg"]})
-    
+
     logger.warning(
         f"Validation Error: {errors}",
-        extra={"correlation_id": correlation_id, "path": request.url.path}
+        extra={"correlation_id": correlation_id, "path": request.url.path},
     )
     return JSONResponse(
         status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
@@ -54,17 +56,18 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
                 "status_code": status.HTTP_422_UNPROCESSABLE_ENTITY,
                 "correlation_id": correlation_id,
                 "details": errors,
-            }
-        }
+            },
+        },
     )
+
 
 async def generic_exception_handler(request: Request, exc: Exception):
     """Manejador para cualquier otra excepción no capturada."""
-    correlation_id = getattr(request.state, 'correlation_id', str(uuid.uuid4())[:8])
+    correlation_id = getattr(request.state, "correlation_id", str(uuid.uuid4())[:8])
     logger.critical(
         f"Unhandled Exception: {exc}",
         extra={"correlation_id": correlation_id, "path": request.url.path},
-        exc_info=True
+        exc_info=True,
     )
     return JSONResponse(
         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -75,9 +78,10 @@ async def generic_exception_handler(request: Request, exc: Exception):
                 "message": "Ha ocurrido un error inesperado en el servidor.",
                 "status_code": status.HTTP_500_INTERNAL_SERVER_ERROR,
                 "correlation_id": correlation_id,
-            }
-        }
+            },
+        },
     )
+
 
 async def add_process_time_and_correlation_id(request: Request, call_next):
     """Middleware para añadir el ID de correlación y medir el tiempo de proceso."""
@@ -99,8 +103,8 @@ async def add_process_time_and_correlation_id(request: Request, call_next):
             "path": request.url.path,
             "method": request.method,
             "status_code": response.status_code,
-            "process_time_ms": round(process_time * 1000, 2)
-        }
+            "process_time_ms": round(process_time * 1000, 2),
+        },
     )
 
     return response

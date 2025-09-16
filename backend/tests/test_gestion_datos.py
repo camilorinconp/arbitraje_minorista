@@ -8,8 +8,13 @@ from sqlalchemy.pool import StaticPool
 
 from backend.main import app
 from backend.services.database import get_db, Base
-from backend.routes.gestion_datos import crear_minorista, MinoristaBase # Importar la función y el esquema
-from backend.models.minorista import Minorista as MinoristaModel # Importar el modelo ORM
+from backend.routes.gestion_datos import (
+    crear_minorista,
+    MinoristaBase,
+)  # Importar la función y el esquema
+from backend.models.minorista import (
+    Minorista as MinoristaModel,
+)  # Importar el modelo ORM
 
 
 @pytest.fixture(scope="function")
@@ -31,6 +36,7 @@ def direct_db_session_fixture():
             yield db
         finally:
             db.close()
+
     app.dependency_overrides[get_db] = override_get_db
 
     yield TestingSessionLocal
@@ -39,6 +45,7 @@ def direct_db_session_fixture():
 
 
 # --- Test de Diagnóstico: Llamada Directa a la Función del Router ---
+
 
 def test_crear_minorista_direct_call(direct_db_session_fixture):
     """
@@ -49,15 +56,21 @@ def test_crear_minorista_direct_call(direct_db_session_fixture):
     try:
         # Verificar que la tabla está vacía al inicio
         initial_count = db.query(MinoristaModel).count()
-        print(f"\n[DIAGNÓSTICO - Direct Call] Recuento inicial de minoristas: {initial_count}")
-        assert initial_count == 0, "La base de datos NO está vacía al iniciar el test directo."
+        print(
+            f"\n[DIAGNÓSTICO - Direct Call] Recuento inicial de minoristas: {initial_count}"
+        )
+        assert (
+            initial_count == 0
+        ), "La base de datos NO está vacía al iniciar el test directo."
 
         # Datos para el minorista
-        minorista_data = MinoristaBase(nombre="Direct Test Minorista", url_base="https://direct.com")
-        
+        minorista_data = MinoristaBase(
+            nombre="Direct Test Minorista", url_base="https://direct.com"
+        )
+
         # Llamar a la función del router directamente
         created_minorista = crear_minorista(minorista=minorista_data, db=db)
-        
+
         # Verificar la respuesta
         assert created_minorista.nombre == "Direct Test Minorista"
         assert created_minorista.url_base == "https://direct.com/"
@@ -65,14 +78,19 @@ def test_crear_minorista_direct_call(direct_db_session_fixture):
 
         # Verificar que el dato existe en la BD
         final_count = db.query(MinoristaModel).count()
-        print(f"[DIAGNÓSTICO - Direct Call] Recuento final de minoristas: {final_count}")
-        assert final_count == 1, "El dato no se insertó correctamente en el test directo."
+        print(
+            f"[DIAGNÓSTICO - Direct Call] Recuento final de minoristas: {final_count}"
+        )
+        assert (
+            final_count == 1
+        ), "El dato no se insertó correctamente en el test directo."
 
     finally:
         db.close()
 
 
 # --- Test de API (para comparación) ---
+
 
 @pytest.fixture(scope="function")
 def api_client_fixture():

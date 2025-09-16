@@ -3,7 +3,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
-from pydantic import BaseModel, HttpUrl
+from pydantic import BaseModel, HttpUrl, field_validator, ConfigDict
 from typing import List, Optional
 from datetime import datetime
 
@@ -30,13 +30,48 @@ class MinoristaBase(BaseModel):
     discovery_url: Optional[HttpUrl] = None
     product_link_selector: Optional[str] = None
 
+    @field_validator("nombre")
+    @classmethod
+    def validate_nombre(cls, v):
+        if not v or not v.strip():
+            raise ValueError("El nombre del minorista no puede estar vacío")
+        if len(v.strip()) < 2:
+            raise ValueError("El nombre del minorista debe tener al menos 2 caracteres")
+        return v.strip()
+
+    @field_validator("url_base")
+    @classmethod
+    def validate_url_base(cls, v):
+        if v and not str(v).startswith(("http://", "https://")):
+            raise ValueError("La URL base debe comenzar con http:// o https://")
+        return v
+
+    @field_validator("discovery_url")
+    @classmethod
+    def validate_discovery_url(cls, v):
+        if v and not str(v).startswith(("http://", "https://")):
+            raise ValueError(
+                "La URL de descubrimiento debe comenzar con http:// o https://"
+            )
+        return v
+
+    @field_validator(
+        "name_selector", "price_selector", "image_selector", "product_link_selector"
+    )
+    @classmethod
+    def validate_selectors(cls, v):
+        if v and not v.strip():
+            return None  # Convertir strings vacíos a None
+        if v and len(v.strip()) < 2:
+            raise ValueError("Los selectores CSS deben tener al menos 2 caracteres")
+        return v.strip() if v else None
+
 
 class Minorista(MinoristaBase):
     id: int
     created_at: datetime
 
-    class Config:
-        orm_mode = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class ProductoBase(BaseModel):
@@ -54,8 +89,7 @@ class Producto(ProductoBase):
     id_minorista: int
     minorista: Optional[Minorista]  # Relación con Minorista
 
-    class Config:
-        orm_mode = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class HistorialPrecioSchema(BaseModel):
@@ -65,8 +99,7 @@ class HistorialPrecioSchema(BaseModel):
     precio: float
     fecha_registro: datetime
 
-    class Config:
-        orm_mode = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 # --- Endpoints para Minoristas ---
@@ -111,9 +144,7 @@ def listar_minoristas(
 
 
 @router.get("/minoristas/buscar", response_model=List[Minorista])
-def buscar_minoristas(
-    q: str, db: Session = Depends(database.get_db)
-):
+def buscar_minoristas(q: str, db: Session = Depends(database.get_db)):
     """
     Busca minoristas por un término de búsqueda en el nombre.
     Ideal para campos de autocompletado.
@@ -152,10 +183,10 @@ def actualizar_minorista(
     )
     if db_minorista is None:
         raise HTTPException(status_code=404, detail="Minorista no encontrado.")
-    
+
     for key, value in minorista.dict(exclude_unset=True).items():
         setattr(db_minorista, key, value)
-    
+
     db.add(db_minorista)
     db.commit()
     db.refresh(db_minorista)
@@ -172,7 +203,7 @@ def eliminar_minorista(minorista_id: int, db: Session = Depends(database.get_db)
     )
     if db_minorista is None:
         raise HTTPException(status_code=404, detail="Minorista no encontrado.")
-    
+
     db.delete(db_minorista)
     db.commit()
     return {"message": "Minorista eliminado exitosamente."}

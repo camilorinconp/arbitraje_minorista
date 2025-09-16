@@ -1,5 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { TextField, Button, Box, Typography, Switch, FormControlLabel, Alert } from '@mui/material';
+import {
+  TextField,
+  Button,
+  Box,
+  Typography,
+  Switch,
+  FormControlLabel,
+  Alert,
+} from '@mui/material';
 import { MinoristaBase, Minorista } from '../api/gestionDatosApi';
 
 interface FormularioMinoristaProps {
@@ -10,26 +18,36 @@ interface FormularioMinoristaProps {
   error?: string | null;
 }
 
-const FormularioMinorista: React.FC<FormularioMinoristaProps> = ({ minoristaInicial, onSave, onCancel, isLoading, error }) => {
-  const [formData, setFormData] = useState<MinoristaBase>(minoristaInicial ? {
-    nombre: minoristaInicial.nombre,
-    url_base: minoristaInicial.url_base,
-    activo: minoristaInicial.activo,
-    name_selector: minoristaInicial.name_selector,
-    price_selector: minoristaInicial.price_selector,
-    image_selector: minoristaInicial.image_selector,
-    discovery_url: minoristaInicial.discovery_url,
-    product_link_selector: minoristaInicial.product_link_selector,
-  } : {
-    nombre: '',
-    url_base: '',
-    activo: true,
-    name_selector: '',
-    price_selector: '',
-    image_selector: '',
-    discovery_url: '',
-    product_link_selector: '',
-  });
+const FormularioMinorista: React.FC<FormularioMinoristaProps> = ({
+  minoristaInicial,
+  onSave,
+  onCancel,
+  isLoading,
+  error,
+}) => {
+  const [formData, setFormData] = useState<MinoristaBase>(
+    minoristaInicial
+      ? {
+          nombre: minoristaInicial.nombre,
+          url_base: minoristaInicial.url_base,
+          activo: minoristaInicial.activo,
+          name_selector: minoristaInicial.name_selector,
+          price_selector: minoristaInicial.price_selector,
+          image_selector: minoristaInicial.image_selector,
+          discovery_url: minoristaInicial.discovery_url,
+          product_link_selector: minoristaInicial.product_link_selector,
+        }
+      : {
+          nombre: '',
+          url_base: '',
+          activo: true,
+          name_selector: '',
+          price_selector: '',
+          image_selector: '',
+          discovery_url: '',
+          product_link_selector: '',
+        }
+  );
 
   useEffect(() => {
     if (minoristaInicial) {
@@ -71,12 +89,20 @@ const FormularioMinorista: React.FC<FormularioMinoristaProps> = ({ minoristaInic
   };
 
   return (
-    <Box component="form" onSubmit={handleSubmit} sx={{ mt: 3, p: 3, border: '1px solid #ccc', borderRadius: '8px' }}>
+    <Box
+      component="form"
+      onSubmit={handleSubmit}
+      sx={{ mt: 3, p: 3, border: '1px solid #ccc', borderRadius: '8px' }}
+    >
       <Typography variant="h5" gutterBottom>
         {minoristaInicial ? 'Editar Minorista' : 'Añadir Nuevo Minorista'}
       </Typography>
-      {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
-      
+      {error && (
+        <Alert severity="error" sx={{ mb: 2 }}>
+          {error}
+        </Alert>
+      )}
+
       <TextField
         label="Nombre del Minorista"
         name="nombre"
@@ -153,7 +179,12 @@ const FormularioMinorista: React.FC<FormularioMinoristaProps> = ({ minoristaInic
         <Button onClick={onCancel} disabled={isLoading}>
           Cancelar
         </Button>
-        <Button type="submit" variant="contained" color="primary" disabled={isLoading}>
+        <Button
+          type="submit"
+          variant="contained"
+          color="primary"
+          disabled={isLoading}
+        >
           {isLoading ? 'Guardando...' : 'Guardar'}
         </Button>
       </Box>
