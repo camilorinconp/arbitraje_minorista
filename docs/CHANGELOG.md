@@ -4,9 +4,25 @@ Este documento registra los cambios significativos, decisiones y progreso del pr
 
 ---
 
-## 🗓️ 15 de Septiembre, 2025 (Tarde) - **FASE 2: Observabilidad y Robustez Funcional**
+## 🗓️ 15 de Septiembre, 2025 (Noche) - **FASE 3: Refinamiento y Documentación**
 
 **Estado**: 🚧 **En Progreso**
+
+Con las funcionalidades críticas y de observabilidad en su lugar, esta fase se enfoca en refinar la robustez del sistema y en formalizar la documentación para facilitar el mantenimiento y la escalabilidad a largo plazo.
+
+### Logros Clave:
+
+- **Implementada Validación de Datos a Nivel de Base de Datos (Capa 1)**:
+  - **Qué**: Se ha añadido una nueva migración que introduce `CHECK constraints` directamente en las tablas `productos`, `historial_precios` y `minoristas`.
+  - **Por qué**: Esto crea una red de seguridad fundamental para la integridad de los datos. Asegura que datos inválidos (como precios negativos) no puedan ser insertados en el sistema, sin importar desde dónde se origine la petición. Es la primera y más fuerte de las 3 capas de validación.
+  - **Cómo**: Se usó `ALTER TABLE ... ADD CONSTRAINT` para añadir reglas que verifican que los precios sean positivos y que los nombres de los minoristas no estén vacíos.
+  - **Referencia a Guía**: Implementa la **Capa 1** de la **Sección #28 (Three-Layer Validation Strategy)**.
+
+---
+
+## 🗓️ 15 de Septiembre, 2025 (Tarde) - **FASE 2: Observabilidad y Robustez Funcional**
+
+**Estado**: ✅ **Completada**
 
 Iniciamos la segunda fase de desarrollo, centrada en implementar las funcionalidades críticas y las capacidades de monitoreo que nos permitirán operar con confianza.
 
