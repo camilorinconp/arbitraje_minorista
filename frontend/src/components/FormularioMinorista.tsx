@@ -1,9 +1,26 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { TextField, Button, Box, Typography, Switch, FormControlLabel, Alert } from '@mui/material';
-import { createMinorista, MinoristaBase } from '../api/gestionDatosApi';
+import { MinoristaBase, Minorista } from '../api/gestionDatosApi';
 
-const FormularioMinorista: React.FC = () => {
-  const [formData, setFormData] = useState<MinoristaBase>({
+interface FormularioMinoristaProps {
+  minoristaInicial?: Minorista; // Para edición
+  onSave: (minorista: MinoristaBase) => Promise<void>;
+  onCancel: () => void;
+  isLoading?: boolean;
+  error?: string | null;
+}
+
+const FormularioMinorista: React.FC<FormularioMinoristaProps> = ({ minoristaInicial, onSave, onCancel, isLoading, error }) => {
+  const [formData, setFormData] = useState<MinoristaBase>(minoristaInicial ? {
+    nombre: minoristaInicial.nombre,
+    url_base: minoristaInicial.url_base,
+    activo: minoristaInicial.activo,
+    name_selector: minoristaInicial.name_selector,
+    price_selector: minoristaInicial.price_selector,
+    image_selector: minoristaInicial.image_selector,
+    discovery_url: minoristaInicial.discovery_url,
+    product_link_selector: minoristaInicial.product_link_selector,
+  } : {
     nombre: '',
     url_base: '',
     activo: true,
@@ -13,9 +30,32 @@ const FormularioMinorista: React.FC = () => {
     discovery_url: '',
     product_link_selector: '',
   });
-  const [loading, setLoading] = useState<boolean>(false);
-  const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (minoristaInicial) {
+      setFormData({
+        nombre: minoristaInicial.nombre,
+        url_base: minoristaInicial.url_base,
+        activo: minoristaInicial.activo,
+        name_selector: minoristaInicial.name_selector,
+        price_selector: minoristaInicial.price_selector,
+        image_selector: minoristaInicial.image_selector,
+        discovery_url: minoristaInicial.discovery_url,
+        product_link_selector: minoristaInicial.product_link_selector,
+      });
+    } else {
+      setFormData({
+        nombre: '',
+        url_base: '',
+        activo: true,
+        name_selector: '',
+        price_selector: '',
+        image_selector: '',
+        discovery_url: '',
+        product_link_selector: '',
+      });
+    }
+  }, [minoristaInicial]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value, checked, type } = e.target;
@@ -27,37 +67,14 @@ const FormularioMinorista: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
-    setError(null);
-    setSuccess(null);
-
-    try {
-      // Asegurarse de que url_base sea una cadena válida antes de enviar
-      const dataToSend = { ...formData, url_base: String(formData.url_base) };
-      await createMinorista(dataToSend);
-      setSuccess('Minorista creado exitosamente!');
-      setFormData({
-        nombre: '',
-        url_base: '' as any,
-        activo: true,
-        name_selector: '',
-        price_selector: '',
-        image_selector: '',
-      });
-    } catch (err) {
-      setError('Error al crear el minorista. Verifique los datos e intente de nuevo.');
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
+    await onSave(formData);
   };
 
   return (
     <Box component="form" onSubmit={handleSubmit} sx={{ mt: 3, p: 3, border: '1px solid #ccc', borderRadius: '8px' }}>
       <Typography variant="h5" gutterBottom>
-        Añadir Nuevo Minorista
+        {minoristaInicial ? 'Editar Minorista' : 'Añadir Nuevo Minorista'}
       </Typography>
-      {success && <Alert severity="success" sx={{ mb: 2 }}>{success}</Alert>}
       {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
       
       <TextField
@@ -94,7 +111,7 @@ const FormularioMinorista: React.FC = () => {
       <TextField
         label="Selector CSS para Nombre (ej. h1.product-title)"
         name="name_selector"
-        value={formData.name_selector}
+        value={formData.name_selector || ''}
         onChange={handleChange}
         fullWidth
         margin="normal"
@@ -102,7 +119,7 @@ const FormularioMinorista: React.FC = () => {
       <TextField
         label="Selector CSS para Precio (ej. span.price-value)"
         name="price_selector"
-        value={formData.price_selector}
+        value={formData.price_selector || ''}
         onChange={handleChange}
         fullWidth
         margin="normal"
@@ -110,14 +127,36 @@ const FormularioMinorista: React.FC = () => {
       <TextField
         label="Selector CSS para Imagen (ej. img.product-image)"
         name="image_selector"
-        value={formData.image_selector}
+        value={formData.image_selector || ''}
         onChange={handleChange}
         fullWidth
         margin="normal"
       />
-      <Button type="submit" variant="contained" color="primary" disabled={loading} sx={{ mt: 2 }}>
-        {loading ? 'Guardando...' : 'Guardar Minorista'}
-      </Button>
+      <TextField
+        label="URL de Descubrimiento (ej. https://www.ejemplo.com/ofertas)"
+        name="discovery_url"
+        value={formData.discovery_url || ''}
+        onChange={handleChange}
+        fullWidth
+        margin="normal"
+        type="url"
+      />
+      <TextField
+        label="Selector CSS para Enlace de Producto (ej. a.product-card)"
+        name="product_link_selector"
+        value={formData.product_link_selector || ''}
+        onChange={handleChange}
+        fullWidth
+        margin="normal"
+      />
+      <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 2, mt: 2 }}>
+        <Button onClick={onCancel} disabled={isLoading}>
+          Cancelar
+        </Button>
+        <Button type="submit" variant="contained" color="primary" disabled={isLoading}>
+          {isLoading ? 'Guardando...' : 'Guardar'}
+        </Button>
+      </Box>
     </Box>
   );
 };

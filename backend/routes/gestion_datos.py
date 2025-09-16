@@ -140,6 +140,44 @@ def obtener_minorista(minorista_id: int, db: Session = Depends(database.get_db))
     return minorista
 
 
+@router.put("/minoristas/{minorista_id}", response_model=Minorista)
+def actualizar_minorista(
+    minorista_id: int, minorista: MinoristaBase, db: Session = Depends(database.get_db)
+):
+    """
+    Actualiza un minorista existente por su ID.
+    """
+    db_minorista = (
+        db.query(MinoristaModel).filter(MinoristaModel.id == minorista_id).first()
+    )
+    if db_minorista is None:
+        raise HTTPException(status_code=404, detail="Minorista no encontrado.")
+    
+    for key, value in minorista.dict(exclude_unset=True).items():
+        setattr(db_minorista, key, value)
+    
+    db.add(db_minorista)
+    db.commit()
+    db.refresh(db_minorista)
+    return db_minorista
+
+
+@router.delete("/minoristas/{minorista_id}", status_code=status.HTTP_204_NO_CONTENT)
+def eliminar_minorista(minorista_id: int, db: Session = Depends(database.get_db)):
+    """
+    Elimina un minorista por su ID.
+    """
+    db_minorista = (
+        db.query(MinoristaModel).filter(MinoristaModel.id == minorista_id).first()
+    )
+    if db_minorista is None:
+        raise HTTPException(status_code=404, detail="Minorista no encontrado.")
+    
+    db.delete(db_minorista)
+    db.commit()
+    return {"message": "Minorista eliminado exitosamente."}
+
+
 # --- Endpoints para Productos (actualizados para usar el nuevo modelo) ---
 
 

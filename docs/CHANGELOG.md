@@ -12,6 +12,23 @@ Con las funcionalidades críticas y de observabilidad en su lugar, esta fase se 
 
 ### Logros Clave:
 
+- **Estabilización y Configuración Final del Entorno de Desarrollo**:
+  - **Qué**: Se han resuelto múltiples errores de compilación y configuración que impedían el correcto funcionamiento del frontend y el backend.
+  - **Por qué**: Era crucial asegurar que el entorno de desarrollo fuera estable y que la aplicación pudiera compilar y ejecutarse sin problemas. Esto elimina bloqueadores y permite al equipo centrarse en el desarrollo de funcionalidades.
+  - **Cómo**:
+    1.  **Backend**: Se corrigió el `ImportError` añadiendo `__init__.py` al directorio `backend` y ajustando la forma de iniciar `uvicorn` desde la raíz del proyecto (`uvicorn backend.main:app`). Se resolvió el `RuntimeWarning` en el scheduler (`await start_scheduler()`).
+    2.  **Frontend**: Se corrigieron errores de compilación relacionados con ESLint/Prettier (asegurando la instalación de `eslint-config-prettier` y la configuración correcta en `package.json` y `tsconfig.json`). Se resolvieron problemas de tipos de Jest (excluyendo archivos `.test.ts/.tsx` de la compilación principal en `tsconfig.json`). Se actualizó la interfaz `Producto` en `gestionDatosApi.ts` a `snake_case` para coincidir con el backend, y se ajustó `ListaProductos.tsx` para usar la nueva nomenclatura.
+    3.  **Configuración General**: Se estandarizaron y documentaron los puertos de desarrollo (`frontend: 3030`, `backend: 8080`) en el `README.md` y en los archivos de configuración (`.env.development`, `package.json`).
+
+- **Implementada la Gestión Completa de Minoristas (CRUD) en el Frontend**:
+  - **Qué**: Se ha refactorizado la página `GestionMinoristas.tsx` y sus componentes asociados (`FormularioMinorista.tsx`, `ListaMinoristas.tsx`) para ofrecer una interfaz de usuario completa para crear, leer, actualizar y eliminar minoristas.
+  - **Por qué**: Proporciona al usuario un control total sobre las fuentes de datos de la aplicación, permitiendo añadir nuevos minoristas, modificar los existentes o eliminarlos de forma intuitiva desde la UI.
+  - **Cómo**:
+    1.  Se añadieron los endpoints `PUT` y `DELETE` para minoristas en el backend (`backend/routes/gestion_datos.py`) y sus correspondientes funciones en la API del frontend (`frontend/src/api/gestionDatosApi.ts`).
+    2.  `FormularioMinorista.tsx` fue refactorizado para soportar tanto la creación como la edición de minoristas.
+    3.  `ListaMinoristas.tsx` fue simplificado para solo mostrar la lista y delegar las acciones de edición y eliminación a su componente padre.
+    4.  `GestionMinoristas.tsx` se convirtió en el controlador principal, utilizando `useQuery` para obtener la lista de minoristas y `useMutation` para gestionar las operaciones de creación, actualización y eliminación, invalidando la caché de React Query automáticamente.
+
 - **Refactorizado el Frontend para usar React Query y Mejorar Arquitectura**:
   - **Qué**: Se ha refactorizado la lógica de obtención de datos en el frontend, migrando de `useState`/`useEffect` a `@tanstack/react-query`. Además, se ha reestructurado la responsabilidad de los componentes.
   - **Por qué**: Para alinear el proyecto con las directrices de arquitectura (que especifican React Query), simplificar el código, y mejorar la separación de responsabilidades. React Query nos proporciona de forma gratuita caching, reintentos y una gestión del estado del servidor mucho más robusta.

@@ -10,8 +10,18 @@ jest.mock('../api/gestionDatosApi', () => ({
 }));
 
 describe('FormularioMinorista', () => {
+  // Mock de las funciones onSave y onCancel
+  const mockOnSave = jest.fn();
+  const mockOnCancel = jest.fn();
+
+  beforeEach(() => {
+    // Limpiar los mocks antes de cada test
+    mockOnSave.mockClear();
+    mockOnCancel.mockClear();
+  });
+
   test('debe renderizar el formulario con todos los campos', () => {
-    render(<FormularioMinorista />);
+    render(<FormularioMinorista onSave={mockOnSave} onCancel={mockOnCancel} />);
 
     // Verificar que el título y los campos de texto principales estén presentes
     expect(screen.getByText(/Añadir Nuevo Minorista/i)).toBeInTheDocument();
@@ -27,7 +37,7 @@ describe('FormularioMinorista', () => {
   });
 
   test('debe permitir al usuario escribir en los campos de texto', () => {
-    render(<FormularioMinorista />);
+    render(<FormularioMinorista onSave={mockOnSave} onCancel={mockOnCancel} />);
 
     const nombreInput = screen.getByLabelText(/Nombre del Minorista/i) as HTMLInputElement;
     const urlInput = screen.getByLabelText(/URL Base/i) as HTMLInputElement;
@@ -40,7 +50,7 @@ describe('FormularioMinorista', () => {
   });
 
   test('el switch de "Activo" debe poder cambiarse', () => {
-    render(<FormularioMinorista />);
+    render(<FormularioMinorista onSave={mockOnSave} onCancel={mockOnCancel} />);
 
     const switchInput = screen.getByLabelText(/Activo para Scrapeo/i) as HTMLInputElement;
 

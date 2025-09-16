@@ -3,14 +3,14 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
-from .core.error_handling import (
+from backend.core.error_handling import (
     add_process_time_and_correlation_id,
     http_exception_handler,
     validation_exception_handler,
     generic_exception_handler,
 )
-from .core.scheduler import start_scheduler, stop_scheduler
-from .routes import gestion_datos, scraper, monitoring
+from backend.core.scheduler import start_scheduler, stop_scheduler
+from backend.routes import gestion_datos, scraper, monitoring
 
 app = FastAPI(
     title="Arbitraje Minorista API",
@@ -21,7 +21,7 @@ app = FastAPI(
 # --- Ciclo de Vida del Planificador ---
 @app.on_event("startup")
 async def on_startup():
-    start_scheduler()
+    await start_scheduler()
 
 @app.on_event("shutdown")
 def on_shutdown():

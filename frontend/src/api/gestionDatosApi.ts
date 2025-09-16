@@ -32,12 +32,12 @@ export interface Minorista {
 
 export interface Producto {
   id: number;
-  nombre: string;
-  precio: number;
-  url_producto: string;
-  url_imagen: string | null;
-  ultima_fecha_rastreo: string; // ISO string date
-  fecha_creacion: string; // ISO string date
+  name: string;
+  price: number;
+  product_url: string;
+  image_url: string | null;
+  last_scraped_at: string; // ISO string date
+  created_at: string; // ISO string date
   id_minorista: number;
   identificador_producto: string | null;
   minorista?: Minorista; // Opcional, si se carga la relación
@@ -91,6 +91,25 @@ export const createMinorista = async (minoristaData: MinoristaBase): Promise<Min
     return response.data;
   } catch (error) {
     console.error("Error al crear minorista:", error);
+    throw error;
+  }
+};
+
+export const updateMinorista = async (id: number, minoristaData: MinoristaBase): Promise<Minorista> => {
+  try {
+    const response = await axios.put<Minorista>(`${API_BASE_URL}/gestion-datos/minoristas/${id}`, minoristaData);
+    return response.data;
+  } catch (error) {
+    console.error(`Error al actualizar minorista con ID ${id}:`, error);
+    throw error;
+  }
+};
+
+export const deleteMinorista = async (id: number): Promise<void> => {
+  try {
+    await axios.delete(`${API_BASE_URL}/gestion-datos/minoristas/${id}`);
+  } catch (error) {
+    console.error(`Error al eliminar minorista con ID ${id}:`, error);
     throw error;
   }
 };

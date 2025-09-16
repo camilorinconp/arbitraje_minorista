@@ -46,7 +46,10 @@ pip install -r requirements-dev.txt
 # Copia las variables de Supabase (URL, KEY, DATABASE_URL) a un archivo .env
 
 # 5. Inicia el servidor de desarrollo
-uvicorn main:app --reload --port 8080
+# Asegúrate de estar en el directorio raíz del proyecto (arbitraje_minorista)
+cd .. # Si estás en el directorio backend, ve al raíz
+source backend/venv/bin/activate # Activa el entorno virtual
+uvicorn backend.main:app --reload --port 8080
 ```
 
 El backend estará disponible en `http://localhost:8080`.
