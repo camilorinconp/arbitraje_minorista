@@ -20,6 +20,13 @@ Con las funcionalidades críticas y de observabilidad en su lugar, esta fase se 
     2.  **Frontend**: Se corrigieron errores de compilación relacionados con ESLint/Prettier (asegurando la instalación de `eslint-config-prettier` y la configuración correcta en `package.json` y `tsconfig.json`). Se resolvieron problemas de tipos de Jest (excluyendo archivos `.test.ts/.tsx` de la compilación principal en `tsconfig.json`). Se actualizó la interfaz `Producto` en `gestionDatosApi.ts` a `snake_case` para coincidir con el backend, y se ajustó `ListaProductos.tsx` para usar la nueva nomenclatura.
     3.  **Configuración General**: Se estandarizaron y documentaron los puertos de desarrollo (`frontend: 3030`, `backend: 8080`) en el `README.md` y en los archivos de configuración (`.env.development`, `package.json`).
 
+### Logros Clave:
+
+- **Documentado el Proceso de Despliegue de la Aplicación**:
+  - **Qué**: Se ha creado una guía completa (`docs/deployment.md`) que detalla los pasos para desplegar tanto el backend (FastAPI) como el frontend (React) en un entorno de producción.
+  - **Por qué**: Es fundamental para la puesta en marcha de la aplicación y para asegurar que el equipo pueda llevar el proyecto a producción de manera eficiente y consistente. Cubre aspectos clave como la configuración de variables de entorno, los comandos de ejecución y las consideraciones específicas para cada componente.
+  - **Cómo**: El documento cubre la preparación, el proceso de despliegue y consideraciones adicionales para el backend y el frontend, así como la gestión de la base de datos Supabase.
+
 - **Implementada la Gestión Completa de Minoristas (CRUD) en el Frontend**:
   - **Qué**: Se ha refactorizado la página `GestionMinoristas.tsx` y sus componentes asociados (`FormularioMinorista.tsx`, `ListaMinoristas.tsx`) para ofrecer una interfaz de usuario completa para crear, leer, actualizar y eliminar minoristas.
   - **Por qué**: Proporciona al usuario un control total sobre las fuentes de datos de la aplicación, permitiendo añadir nuevos minoristas, modificar los existentes o eliminarlos de forma intuitiva desde la UI.
