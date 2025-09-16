@@ -18,11 +18,10 @@
   "scripts": {
     "start": "PORT=3030 react-scripts start",
     "build": "react-scripts build",
-    "test": "react-scripts test",
+    "test": "jest",
     "eject": "react-scripts eject",
-        "lint": "eslint . --ext .ts,.tsx",
-    "format": "prettier --write .",
-    "test": "jest"
+    "lint": "eslint . --ext .ts,.tsx",
+    "format": "prettier --write ."
   },
   "eslintConfig": {
     "extends": [

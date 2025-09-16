@@ -12,6 +12,14 @@ Con las funcionalidades críticas y de observabilidad en su lugar, esta fase se 
 
 ### Logros Clave:
 
+- **Refactorizado el Frontend para usar React Query y Mejorar Arquitectura**:
+  - **Qué**: Se ha refactorizado la lógica de obtención de datos en el frontend, migrando de `useState`/`useEffect` a `@tanstack/react-query`. Además, se ha reestructurado la responsabilidad de los componentes.
+  - **Por qué**: Para alinear el proyecto con las directrices de arquitectura (que especifican React Query), simplificar el código, y mejorar la separación de responsabilidades. React Query nos proporciona de forma gratuita caching, reintentos y una gestión del estado del servidor mucho más robusta.
+  - **Cómo**:
+    1.  El componente `Dashboard.tsx` ahora maneja las acciones del usuario (modales para añadir minoristas y scrapear).
+    2.  El componente `ListaProductos.tsx` fue simplificado para encargarse únicamente de mostrar los datos, obtenidos a través del hook `useQuery`.
+    3.  La aplicación fue envuelta en un `QueryClientProvider` en `index.tsx`.
+
 - **Creada la Página Principal del Dashboard para Visualización de Datos**:
   - **Qué**: Se ha creado un nuevo componente de página `Dashboard.tsx` y se ha establecido como la ruta principal de la aplicación.
   - **Por qué**: Para proporcionar una vista centralizada y unificada para la visualización de datos. Esto mejora la estructura de la aplicación, pasando de mostrar un simple componente a tener una página principal dedicada que puede albergar múltiples visualizaciones y controles en el futuro.
