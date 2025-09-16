@@ -2004,13 +2004,19 @@ ADD COLUMN nuevo_campo TEXT DEFAULT NULL;
 
 ## 🚀 Historial y Decisiones del Proyecto: Arbitraje Minorista [REGISTRO DE PROYECTO]
 
-#### **15 de Septiembre, 2025: Implementación del Motor de Descubrimiento Automático (Fase 2)**
+#### **15 de Septiembre, 2025: Implementación del Motor de Descubrimiento de Productos (Fase 5 - EPIC 1)**
 
-- **Objetivo**: Transformar la herramienta de una operación manual a un motor de scraping autónomo.
+- **Objetivo**: Extender la capacidad del sistema para descubrir automáticamente nuevos productos de minoristas configurados, sentando las bases para la escalabilidad.
 - **Decisiones Clave**:
-    1.  **Extensión del Modelo `Minorista`**: Se añadieron los campos `discovery_url` (para la página de categorías/ofertas) y `product_link_selector` (para identificar los enlaces a productos). Esta decisión mantiene la flexibilidad, permitiendo que cada minorista tenga su propia estrategia de descubrimiento.
-    2.  **Lógica de Scheduler Robusta**: El `scraping_job` se implementó para ser resiliente. Un error en el scraping de un único producto se captura y se registra, pero no detiene el proceso general, asegurando que el resto de la cola de trabajo se complete.
-    3.  **Separación de Responsabilidades**: La lógica de descubrir URLs se encapsuló en una nueva función `discover_product_urls` dentro del servicio de scraper, manteniendo el `scheduler` limpio y enfocado en la orquestación.
-- **Resultado**: El backend ahora puede descubrir y scrapear productos de forma autónoma y periódica, cumpliendo el objetivo principal de la Fase 2.
+    1.  **Función de Descubrimiento Dedicada**: Se creó la función asíncrona `discover_products_and_add_to_db` en `backend/services/scraper.py`. Esta función es responsable de:
+        *   Obtener minoristas activos con `discovery_url` y `product_link_selector` configurados.
+        *   Navegar a la `discovery_url` de cada minorista.
+        *   Extraer enlaces de productos utilizando el `product_link_selector`.
+        *   Añadir nuevos productos a la base de datos o actualizar la `ultima_actualizacion` de los existentes.
+    2.  **Orquestación del Scheduler**: El `scraping_job` en `backend/core/scheduler.py` fue modificado para:
+        *   Primero, ejecutar `discover_products_and_add_to_db` para asegurar que la base de datos contenga todos los productos potenciales.
+        *   Luego, iterar sobre *todos los productos activos* en la base de datos (tanto los recién descubiertos como los preexistentes) y llamar a `scrape_product_data` para obtener sus detalles y precios.
+    3.  **Manejo de Errores y Resiliencia**: Se mantuvo y mejoró el manejo de excepciones para asegurar que un fallo en el descubrimiento o scraping de un producto individual no detenga el proceso general.
+- **Resultado**: El sistema ahora puede identificar y registrar nuevos productos de forma autónoma a través de las URLs de descubrimiento de los minoristas, y luego proceder a raspar los detalles de todos los productos activos, cumpliendo con el objetivo del EPIC 1 de la Fase 5.
 
 ```

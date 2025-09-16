@@ -2,7 +2,9 @@ import logging
 import asyncio
 from urllib.parse import urljoin
 from playwright.async_api import async_playwright
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import sessionmaker
+from sqlalchemy.future import select
+from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.exc import IntegrityError
 from datetime import datetime
 from fastapi import HTTPException
@@ -15,43 +17,7 @@ from ..models.historial_precio import HistorialPrecio
 logger = logging.getLogger(__name__)
 
 
-async def discover_product_urls(minorista: Minorista) -> list[str]:
-    """
-    Navega a la URL de descubrimiento de un minorista y extrae los enlaces a productos.
-    """
-    if not all([minorista.discovery_url, minorista.product_link_selector]):
-        logger.warning(f"Minorista '{minorista.nombre}' no tiene discovery_url o product_link_selector. Saltando.")
-        return []
 
-    logger.info(f"Descubriendo productos para '{minorista.nombre}' en {minorista.discovery_url}")
-    urls_descubiertas = set()
-
-    async with async_playwright() as p:
-        browser = await p.chromium.launch(headless=True)
-        page = await browser.new_page()
-        try:
-            await page.goto(minorista.discovery_url, wait_until="domcontentloaded")
-            
-            enlaces = await page.locator(minorista.product_link_selector).all()
-            if not enlaces:
-                logger.warning(f"No se encontraron enlaces de producto en {minorista.discovery_url} con el selector '{minorista.product_link_selector}'")
-                return []
-
-            for link_locator in enlaces:
-                href = await link_locator.get_attribute("href")
-                if href:
-                    # Construir URL absoluta si es relativa
-                    full_url = urljoin(minorista.url_base, href)
-                    urls_descubiertas.add(full_url)
-            
-            logger.info(f"Se encontraron {len(urls_descubiertas)} URLs de producto únicas para '{minorista.nombre}'.")
-            return list(urls_descubiertas)
-
-        except Exception as e:
-            logger.error(f"Error descubriendo productos para {minorista.nombre}: {e}", exc_info=True)
-            return []
-        finally:
-            await browser.close()
 
 
 from playwright.async_api import async_playwright, Page
@@ -173,3 +139,74 @@ async def scrape_product_data(product_url: str, id_minorista: int, db: Session):
             raise HTTPException(status_code=500, detail=f"Error inesperado durante el scraping.")
         finally:
             await browser.close()
+
+
+async def discover_products_and_add_to_db(db: sessionmaker):
+    logger.info("Iniciando el proceso de descubrimiento de productos.")
+    async with db() as session:
+        try:
+            # Obtener minoristas activos con URLs de descubrimiento configuradas
+            stmt = select(Minorista).where(
+                Minorista.activo == True,
+                Minorista.discovery_url.isnot(None),
+                Minorista.product_link_selector.isnot(None)
+            )
+            minoristas = (await session.execute(stmt)).scalars().all()
+
+            if not minoristas:
+                logger.info("No se encontraron minoristas activos con URLs de descubrimiento configuradas.")
+                return
+
+            async with async_playwright() as p:
+                browser = await p.chromium.launch(headless=True)
+                for minorista in minoristas:
+                    logger.info(f"Descubriendo productos para minorista: {minorista.nombre} en {minorista.discovery_url}")
+                    try:
+                        page = await browser.new_page()
+                        await page.goto(minorista.discovery_url, wait_until="domcontentloaded")
+
+                        # Extraer enlaces de productos
+                        product_links = await page.evaluate(f'''(selector) => {{
+                            const links = Array.from(document.querySelectorAll(selector));
+                            return links.map(link => link.href);
+                        }}''', minorista.product_link_selector)
+
+                        logger.info(f"Se encontraron {len(product_links)} enlaces de productos para {minorista.nombre}.")
+
+                        for link in product_links:
+                            # Construir URL absoluta si es relativa
+                            full_url = urljoin(minorista.url_base, link)
+
+                            existing_product = await session.execute(
+                                select(Producto).where(
+                                    Producto.url == full_url,
+                                    Producto.minorista_id == minorista.id
+                                )
+                            )
+                            product = existing_product.scalar_one_or_none()
+
+                            if not product:
+                                new_product = Producto(
+                                    nombre="Producto Desconocido", # Nombre temporal, se actualizará al raspar
+                                    url=full_url,
+                                    minorista_id=minorista.id,
+                                    ultima_actualizacion=datetime.utcnow(),
+                                    activo=True
+                                )
+                                session.add(new_product)
+                                logger.info(f"Nuevo producto descubierto y añadido: {full_url} para {minorista.nombre}")
+                            else:
+                                # Actualizar la fecha de última actualización para productos ya existentes
+                                product.ultima_actualizacion = datetime.utcnow()
+                                logger.debug(f"Producto existente actualizado: {full_url} para {minorista.nombre}")
+                        await session.commit()
+                        await page.close()
+                    except Exception as e:
+                        logger.error(f"Error al descubrir productos para {minorista.nombre} ({minorista.discovery_url}): {e}")
+                await browser.close()
+        except SQLAlchemyError as e:
+            await session.rollback()
+            logger.error(f"Error de base de datos durante el descubrimiento de productos: {e}")
+        except Exception as e:
+            logger.error(f"Error inesperado durante el descubrimiento de productos: {e}")
+    logger.info("Proceso de descubrimiento de productos finalizado.")

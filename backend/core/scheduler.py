@@ -7,7 +7,7 @@ from apscheduler.triggers.interval import IntervalTrigger
 
 from ..services.database import SessionLocal
 from ..models.minorista import Minorista
-from ..services.scraper import discover_product_urls, scrape_product_data
+from ..services.scraper import scrape_product_data, discover_products_and_add_to_db
 
 # Configurar logger
 logger = logging.getLogger(__name__)
@@ -23,32 +23,27 @@ async def scraping_job():
     """
     logger.info("Ejecutando el trabajo de scraping programado...")
     
+    # Primero, ejecutar el proceso de descubrimiento de productos
+    await discover_products_and_add_to_db(SessionLocal)
+
     db = SessionLocal()
     try:
-        minoristas_activos = db.query(Minorista).filter(Minorista.activo == True).all()
-        logger.info(f"Encontrados {len(minoristas_activos)} minoristas activos.")
+        # Obtener todos los productos activos para scrapear
+        productos_activos = db.query(Producto).filter(Producto.activo == True).all()
+        logger.info(f"Encontrados {len(productos_activos)} productos activos para scrapear.")
         
-        if not minoristas_activos:
-            logger.info("No hay minoristas activos para scrapear. Saltando ejecución.")
+        if not productos_activos:
+            logger.info("No hay productos activos para scrapear. Saltando ejecución.")
             return
 
-        for minorista in minoristas_activos:
-            logger.info(f"Procesando minorista: {minorista.nombre}")
+        for producto in productos_activos:
+            logger.info(f"Scrapeando producto: {producto.nombre} ({producto.url})")
             try:
-                urls_a_scrapear = await discover_product_urls(minorista)
-                logger.info(f"Se encontraron {len(urls_a_scrapear)} URLs para '{minorista.nombre}'.")
-
-                for url in urls_a_scrapear:
-                    try:
-                        await scrape_product_data(url, minorista.id, db)
-                    except Exception as e:
-                        logger.error(f"Error scrapeando la URL {url} para el minorista {minorista.nombre}: {e}")
-                
+                await scrape_product_data(producto.url, producto.minorista_id, db)
                 # Pequeña pausa para no saturar los servidores
-                await asyncio.sleep(5)
-
+                await asyncio.sleep(1) # Pausa más corta ya que es por producto
             except Exception as e:
-                logger.error(f"Error procesando al minorista {minorista.nombre}: {e}", exc_info=True)
+                logger.error(f"Error scrapeando el producto {producto.nombre} (URL: {producto.url}): {e}", exc_info=True)
 
     except Exception as e:
         logger.error(f"Error durante la ejecución del trabajo de scraping: {e}", exc_info=True)
