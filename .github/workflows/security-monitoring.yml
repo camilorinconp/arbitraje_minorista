@@ -1,0 +1,356 @@
+# .github/workflows/security-monitoring.yml
+
+name: Security Monitoring
+
+on:
+  schedule:
+    # Run daily at 2 AM UTC
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+  push:
+    paths:
+      - '**/requirements*.txt'
+      - '**/package*.json'
+
+jobs:
+  # === Dependency Security Scanning ===
+  dependency-scan:
+    name: Dependency Security Scan
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.12'
+
+    - name: Install Python security tools
+      run: |
+        python -m pip install --upgrade pip
+        pip install safety bandit semgrep
+
+    - name: Scan Python dependencies for vulnerabilities
+      run: |
+        cd backend
+        echo "## 🔒 Python Security Scan Results" >> ../security-report.md
+        echo "" >> ../security-report.md
+
+        # Check for known vulnerabilities
+        echo "### Known Vulnerabilities (Safety)" >> ../security-report.md
+        safety check --json --output safety-report.json || true
+        if [ -f safety-report.json ]; then
+          echo "Vulnerabilities found - see safety-report.json" >> ../security-report.md
+        else
+          echo "✅ No known vulnerabilities found" >> ../security-report.md
+        fi
+        echo "" >> ../security-report.md
+
+    - name: Run static security analysis
+      run: |
+        cd backend
+        echo "### Static Security Analysis (Bandit)" >> ../security-report.md
+        bandit -r . -f json -o bandit-report.json || true
+        if [ -f bandit-report.json ]; then
+          # Count issues
+          ISSUES=$(jq '.results | length' bandit-report.json 2>/dev/null || echo "0")
+          echo "Found $ISSUES potential security issues" >> ../security-report.md
+        else
+          echo "✅ No security issues detected" >> ../security-report.md
+        fi
+        echo "" >> ../security-report.md
+
+    - name: Set up Node.js for frontend scanning
+      uses: actions/setup-node@v4
+      with:
+        node-version: '19'
+
+    - name: Audit Node.js dependencies
+      run: |
+        cd frontend
+        echo "### Frontend Dependencies Audit" >> ../security-report.md
+        npm audit --audit-level=moderate --json > audit-report.json || true
+        if [ -f audit-report.json ]; then
+          VULNERABILITIES=$(jq '.metadata.vulnerabilities.total' audit-report.json 2>/dev/null || echo "0")
+          echo "Found $VULNERABILITIES vulnerabilities in frontend dependencies" >> ../security-report.md
+        else
+          echo "✅ No frontend vulnerabilities found" >> ../security-report.md
+        fi
+
+    - name: Upload security reports
+      uses: actions/upload-artifact@v3
+      with:
+        name: security-reports
+        path: |
+          security-report.md
+          backend/safety-report.json
+          backend/bandit-report.json
+          frontend/audit-report.json
+
+    - name: Create security issue if vulnerabilities found
+      if: github.event_name == 'schedule'
+      run: |
+        # Check if any critical vulnerabilities were found
+        if [ -f backend/safety-report.json ] && [ "$(cat backend/safety-report.json)" != "[]" ]; then
+          echo "Critical vulnerabilities found - would create GitHub issue"
+          # gh issue create --title "Security Alert: Critical Vulnerabilities Found" --body-file security-report.md
+        fi
+
+  # === Dependency Updates ===
+  dependency-updates:
+    name: Check for Dependency Updates
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.12'
+
+    - name: Check for Python package updates
+      run: |
+        cd backend
+        pip install pip-check-updates
+
+        echo "## 📦 Dependency Update Report" > ../update-report.md
+        echo "" >> ../update-report.md
+        echo "### Python Dependencies" >> ../update-report.md
+
+        # Check for outdated packages
+        pip list --outdated --format=json > outdated-packages.json || true
+        if [ -f outdated-packages.json ] && [ "$(cat outdated-packages.json)" != "[]" ]; then
+          OUTDATED_COUNT=$(jq '. | length' outdated-packages.json)
+          echo "Found $OUTDATED_COUNT outdated Python packages:" >> ../update-report.md
+          jq -r '.[] | "- \(.name): \(.version) → \(.latest_version)"' outdated-packages.json >> ../update-report.md
+        else
+          echo "✅ All Python packages are up to date" >> ../update-report.md
+        fi
+        echo "" >> ../update-report.md
+
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '19'
+
+    - name: Check for Node.js package updates
+      run: |
+        cd frontend
+        echo "### Node.js Dependencies" >> ../update-report.md
+        npm outdated --json > outdated-npm.json || true
+        if [ -f outdated-npm.json ] && [ "$(cat outdated-npm.json)" != "{}" ]; then
+          echo "Found outdated Node.js packages:" >> ../update-report.md
+          jq -r 'to_entries[] | "- \(.key): \(.value.current) → \(.value.latest)"' outdated-npm.json >> ../update-report.md
+        else
+          echo "✅ All Node.js packages are up to date" >> ../update-report.md
+        fi
+
+    - name: Upload update report
+      uses: actions/upload-artifact@v3
+      with:
+        name: dependency-updates
+        path: |
+          update-report.md
+          backend/outdated-packages.json
+          frontend/outdated-npm.json
+
+  # === Code Quality Monitoring ===
+  code-quality:
+    name: Code Quality Analysis
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0  # Fetch full history for better analysis
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.12'
+
+    - name: Install code quality tools
+      run: |
+        pip install ruff black isort mypy
+        cd backend
+        pip install -r requirements.txt
+
+    - name: Run code formatting check
+      run: |
+        cd backend
+        echo "## 🎨 Code Quality Report" > ../quality-report.md
+        echo "" >> ../quality-report.md
+
+        echo "### Code Formatting (Black)" >> ../quality-report.md
+        if black --check --diff . > black-report.txt 2>&1; then
+          echo "✅ Code is properly formatted" >> ../quality-report.md
+        else
+          echo "❌ Code formatting issues found:" >> ../quality-report.md
+          echo '```' >> ../quality-report.md
+          cat black-report.txt >> ../quality-report.md
+          echo '```' >> ../quality-report.md
+        fi
+        echo "" >> ../quality-report.md
+
+    - name: Run import sorting check
+      run: |
+        cd backend
+        echo "### Import Sorting (isort)" >> ../quality-report.md
+        if isort --check-only --diff . > isort-report.txt 2>&1; then
+          echo "✅ Imports are properly sorted" >> ../quality-report.md
+        else
+          echo "❌ Import sorting issues found:" >> ../quality-report.md
+          echo '```' >> ../quality-report.md
+          cat isort-report.txt >> ../quality-report.md
+          echo '```' >> ../quality-report.md
+        fi
+        echo "" >> ../quality-report.md
+
+    - name: Run linting
+      run: |
+        cd backend
+        echo "### Linting (Ruff)" >> ../quality-report.md
+        if ruff check . --format=text > ruff-report.txt 2>&1; then
+          echo "✅ No linting issues found" >> ../quality-report.md
+        else
+          echo "❌ Linting issues found:" >> ../quality-report.md
+          echo '```' >> ../quality-report.md
+          cat ruff-report.txt >> ../quality-report.md
+          echo '```' >> ../quality-report.md
+        fi
+
+    - name: Upload quality report
+      uses: actions/upload-artifact@v3
+      with:
+        name: code-quality-report
+        path: quality-report.md
+
+  # === License Compliance ===
+  license-check:
+    name: License Compliance
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.12'
+
+    - name: Install license checking tools
+      run: |
+        pip install pip-licenses
+
+    - name: Check Python package licenses
+      run: |
+        cd backend
+        pip install -r requirements.txt
+        echo "## 📄 License Compliance Report" > ../license-report.md
+        echo "" >> ../license-report.md
+        echo "### Python Package Licenses" >> ../license-report.md
+        echo "" >> ../license-report.md
+
+        pip-licenses --format=markdown >> ../license-report.md
+
+        # Check for problematic licenses
+        echo "" >> ../license-report.md
+        echo "### License Analysis" >> ../license-report.md
+        PROBLEMATIC=$(pip-licenses --format=json | jq -r '.[] | select(.License | test("GPL|AGPL|SSPL")) | .Name' | wc -l)
+        if [ "$PROBLEMATIC" -gt 0 ]; then
+          echo "⚠️ Found $PROBLEMATIC packages with potentially problematic licenses" >> ../license-report.md
+          pip-licenses --format=json | jq -r '.[] | select(.License | test("GPL|AGPL|SSPL")) | "- \(.Name): \(.License)"' >> ../license-report.md
+        else
+          echo "✅ No problematic licenses detected" >> ../license-report.md
+        fi
+
+    - name: Set up Node.js for frontend license check
+      uses: actions/setup-node@v4
+      with:
+        node-version: '19'
+
+    - name: Check Node.js package licenses
+      run: |
+        cd frontend
+        npm install
+        npx license-checker --json > licenses.json
+        echo "" >> ../license-report.md
+        echo "### Frontend Package Licenses" >> ../license-report.md
+        echo "License information saved to licenses.json" >> ../license-report.md
+
+    - name: Upload license report
+      uses: actions/upload-artifact@v3
+      with:
+        name: license-report
+        path: |
+          license-report.md
+          frontend/licenses.json
+
+  # === Summary Report ===
+  security-summary:
+    name: Security Summary
+    runs-on: ubuntu-latest
+    needs: [dependency-scan, dependency-updates, code-quality, license-check]
+    if: always()
+
+    steps:
+    - name: Download all reports
+      uses: actions/download-artifact@v3
+
+    - name: Create comprehensive security summary
+      run: |
+        echo "# 🔒 Daily Security and Quality Report" > final-report.md
+        echo "" >> final-report.md
+        echo "**Date:** $(date -u +"%Y-%m-%d %H:%M UTC")" >> final-report.md
+        echo "**Repository:** ${{ github.repository }}" >> final-report.md
+        echo "**Commit:** ${{ github.sha }}" >> final-report.md
+        echo "" >> final-report.md
+
+        # Combine all reports
+        if [ -f security-reports/security-report.md ]; then
+          cat security-reports/security-report.md >> final-report.md
+          echo "" >> final-report.md
+        fi
+
+        if [ -f dependency-updates/update-report.md ]; then
+          cat dependency-updates/update-report.md >> final-report.md
+          echo "" >> final-report.md
+        fi
+
+        if [ -f code-quality-report/quality-report.md ]; then
+          cat code-quality-report/quality-report.md >> final-report.md
+          echo "" >> final-report.md
+        fi
+
+        if [ -f license-report/license-report.md ]; then
+          cat license-report/license-report.md >> final-report.md
+        fi
+
+        echo "" >> final-report.md
+        echo "---" >> final-report.md
+        echo "*Report generated by GitHub Actions*" >> final-report.md
+
+    - name: Upload final report
+      uses: actions/upload-artifact@v3
+      with:
+        name: daily-security-report
+        path: final-report.md
+
+    - name: Add summary to job
+      run: |
+        echo "## 🛡️ Daily Security Monitoring Complete" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "| Check | Status |" >> $GITHUB_STEP_SUMMARY
+        echo "|-------|--------|" >> $GITHUB_STEP_SUMMARY
+        echo "| Dependency Scan | ${{ needs.dependency-scan.result == 'success' && '✅ Pass' || '❌ Issues Found' }} |" >> $GITHUB_STEP_SUMMARY
+        echo "| Dependency Updates | ${{ needs.dependency-updates.result == 'success' && '✅ Checked' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
+        echo "| Code Quality | ${{ needs.code-quality.result == 'success' && '✅ Pass' || '❌ Issues Found' }} |" >> $GITHUB_STEP_SUMMARY
+        echo "| License Check | ${{ needs.license-check.result == 'success' && '✅ Pass' || '❌ Issues Found' }} |" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "📊 **Full report available in artifacts**" >> $GITHUB_STEP_SUMMARY

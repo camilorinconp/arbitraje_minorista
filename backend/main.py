@@ -11,7 +11,7 @@ from backend.core.error_handling import (
     generic_exception_handler,
 )
 from backend.core.scheduler import start_scheduler, stop_scheduler
-from backend.routes import gestion_datos, scraper, monitoring, observability
+from backend.routes import gestion_datos, scraper, monitoring, observability, rate_limit_status
 from backend.services.event_handlers import register_event_handlers
 from backend.services.cache import periodic_cache_cleanup
 from backend.services.logging_config import setup_logging
@@ -22,18 +22,39 @@ from backend.services.graceful_shutdown import (
     setup_signal_handlers,
     register_all_shutdown_callbacks
 )
+from backend.services.rate_limiter import setup_rate_limiting
+from backend.core.config import settings, validate_production_config
 import asyncio
+import logging
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Startup
+    logger = logging.getLogger(__name__)
+
+    # Validate production configuration
+    if settings.is_production:
+        config_errors = validate_production_config()
+        if config_errors:
+            logger.error("Production configuration errors:")
+            for error in config_errors:
+                logger.error(f"  - {error}")
+            raise RuntimeError("Invalid production configuration")
+
+    logger.info(f"Starting {settings.app_name} v{settings.app_version} in {settings.app_env} mode")
+
     setup_logging()
     setup_signal_handlers()
     register_all_shutdown_callbacks()
     register_all_health_checks()
     register_event_handlers()
-    await start_scheduler()
+
+    if settings.scheduler_enabled:
+        await start_scheduler()
+        logger.info("Scheduler started")
+    else:
+        logger.info("Scheduler disabled by configuration")
 
     # Iniciar tareas de limpieza con graceful shutdown
     async with shutdown_manager.managed_task(periodic_cache_cleanup()) as cache_task:
@@ -46,10 +67,13 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(
-    title="Arbitraje Minorista API",
-    version="0.1.0",
+    title=settings.app_name,
+    version=settings.app_version,
     description="API para el seguimiento de productos y oportunidades de arbitraje.",
-    lifespan=lifespan
+    lifespan=lifespan,
+    docs_url="/docs" if settings.enable_docs else None,
+    redoc_url="/redoc" if settings.enable_redoc else None,
+    openapi_url="/openapi.json" if settings.enable_docs else None
 )
 
 
@@ -61,12 +85,15 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://localhost:3030"],
+    allow_origins=settings.get_cors_origins_for_env(),
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 app.middleware("http")(add_process_time_and_correlation_id)
+
+# --- Rate Limiting ---
+setup_rate_limiting(app)
 
 
 # --- Exception Handlers ---
@@ -77,7 +104,19 @@ app.add_exception_handler(Exception, generic_exception_handler)
 
 @app.get("/")
 def read_root():
-    return {"message": "Bienvenido a la API de Arbitraje Minorista"}
+    return {
+        "message": f"Bienvenido a {settings.app_name}",
+        "version": settings.app_version,
+        "environment": settings.app_env.value,
+        "status": "running"
+    }
+
+
+@app.get("/config")
+def get_config_info():
+    """Obtener información de configuración (sin secrets)."""
+    from backend.core.config import get_environment_info
+    return get_environment_info()
 
 
 # --- Routers ---
@@ -85,3 +124,8 @@ app.include_router(gestion_datos.router)
 app.include_router(scraper.router)
 app.include_router(monitoring.router)
 app.include_router(observability.router)
+app.include_router(rate_limit_status.router)
+
+# Authentication router
+from backend.routes import auth
+app.include_router(auth.router)

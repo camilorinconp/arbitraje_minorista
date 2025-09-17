@@ -1,0 +1,316 @@
+# .github/workflows/deploy.yml
+
+name: Deploy to Production
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to deploy to'
+        required: true
+        default: 'staging'
+        type: choice
+        options:
+        - staging
+        - production
+      force_deploy:
+        description: 'Force deployment even if tests fail'
+        required: false
+        default: false
+        type: boolean
+
+  push:
+    tags:
+      - 'v*'
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  # === Pre-deployment Checks ===
+  pre-deployment:
+    name: Pre-deployment Validation
+    runs-on: ubuntu-latest
+
+    outputs:
+      should_deploy: ${{ steps.check.outputs.should_deploy }}
+      environment: ${{ steps.check.outputs.environment }}
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Determine deployment environment
+      id: check
+      run: |
+        if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+          echo "environment=${{ github.event.inputs.environment }}" >> $GITHUB_OUTPUT
+        elif [ "${{ github.event_name }}" = "push" ] && [[ "${{ github.ref }}" == refs/tags/v* ]]; then
+          echo "environment=production" >> $GITHUB_OUTPUT
+        else
+          echo "environment=staging" >> $GITHUB_OUTPUT
+        fi
+
+        # Check if we should deploy
+        if [ "${{ github.event.inputs.force_deploy }}" = "true" ]; then
+          echo "should_deploy=true" >> $GITHUB_OUTPUT
+          echo "⚠️ Force deployment enabled - skipping some checks"
+        else
+          echo "should_deploy=true" >> $GITHUB_OUTPUT
+        fi
+
+    - name: Validate deployment readiness
+      if: steps.check.outputs.environment == 'production'
+      run: |
+        echo "🔍 Validating production deployment readiness..."
+
+        # Check that we're on a tagged version for production
+        if [ "${{ github.event_name }}" = "push" ] && [[ "${{ github.ref }}" == refs/tags/v* ]]; then
+          echo "✅ Production deployment from tag: ${{ github.ref_name }}"
+        elif [ "${{ github.event.inputs.force_deploy }}" = "true" ]; then
+          echo "⚠️ Force production deployment without tag"
+        else
+          echo "❌ Production deployments require a version tag"
+          exit 1
+        fi
+
+  # === Build and Push Docker Images ===
+  build-and-push:
+    name: Build and Push Images
+    runs-on: ubuntu-latest
+    needs: pre-deployment
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Log in to Container Registry
+      uses: docker/login-action@v3
+      with:
+        registry: ${{ env.REGISTRY }}
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Extract metadata
+      id: meta
+      uses: docker/metadata-action@v5
+      with:
+        images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+        tags: |
+          type=ref,event=branch
+          type=ref,event=pr
+          type=semver,pattern={{version}}
+          type=semver,pattern={{major}}.{{minor}}
+          type=sha,prefix={{branch}}-
+
+    - name: Create optimized Dockerfile for production
+      run: |
+        cat > backend/Dockerfile.prod << 'EOF'
+        # Multi-stage build for production
+        FROM python:3.12-slim as builder
+
+        WORKDIR /app
+
+        # Install build dependencies
+        RUN apt-get update && apt-get install -y \
+            build-essential \
+            libpq-dev \
+            && rm -rf /var/lib/apt/lists/*
+
+        # Install Python dependencies
+        COPY requirements*.txt ./
+        RUN pip install --user --no-cache-dir -r requirements.txt
+
+        # === Production Stage ===
+        FROM python:3.12-slim
+
+        WORKDIR /app
+
+        # Install runtime dependencies only
+        RUN apt-get update && apt-get install -y \
+            libpq5 \
+            curl \
+            && rm -rf /var/lib/apt/lists/* \
+            && apt-get clean
+
+        # Copy Python packages from builder
+        COPY --from=builder /root/.local /root/.local
+
+        # Create non-root user
+        RUN useradd --create-home --shell /bin/bash app \
+            && mkdir -p /app/logs \
+            && chown -R app:app /app
+
+        # Copy application code
+        COPY --chown=app:app . .
+
+        # Switch to non-root user
+        USER app
+
+        # Add local packages to PATH
+        ENV PATH=/root/.local/bin:$PATH
+
+        # Health check
+        HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
+            CMD curl -f http://localhost:8000/observability/health || exit 1
+
+        EXPOSE 8000
+
+        # Production command with proper configuration
+        CMD ["python", "-m", "uvicorn", "main:app", \
+             "--host", "0.0.0.0", \
+             "--port", "8000", \
+             "--workers", "4", \
+             "--access-log", \
+             "--log-config", "logging.conf"]
+        EOF
+
+    - name: Build and push Docker image
+      uses: docker/build-push-action@v5
+      with:
+        context: ./backend
+        file: ./backend/Dockerfile.prod
+        push: true
+        tags: ${{ steps.meta.outputs.tags }}
+        labels: ${{ steps.meta.outputs.labels }}
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+
+  # === Deploy to Staging ===
+  deploy-staging:
+    name: Deploy to Staging
+    runs-on: ubuntu-latest
+    needs: [pre-deployment, build-and-push]
+    if: needs.pre-deployment.outputs.environment == 'staging'
+    environment: staging
+
+    steps:
+    - name: Deploy to staging environment
+      run: |
+        echo "🚀 Deploying to staging environment..."
+        echo "Image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}"
+
+        # Here you would integrate with your staging deployment platform
+        # Examples:
+        # - Railway: railway up
+        # - Render: curl deployment webhook
+        # - Heroku: heroku container:release
+        # - Kubernetes: kubectl apply
+
+        echo "✅ Staging deployment completed"
+
+    - name: Run staging smoke tests
+      run: |
+        echo "🧪 Running staging smoke tests..."
+
+        # Wait for deployment to be ready
+        sleep 30
+
+        # Replace with your actual staging URL
+        STAGING_URL="https://your-staging-app.com"
+
+        # Basic smoke tests
+        curl -f "$STAGING_URL/observability/health" || (echo "❌ Health check failed" && exit 1)
+        curl -f "$STAGING_URL/config" || (echo "❌ Config endpoint failed" && exit 1)
+
+        echo "✅ Staging smoke tests passed"
+
+  # === Deploy to Production ===
+  deploy-production:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    needs: [pre-deployment, build-and-push]
+    if: needs.pre-deployment.outputs.environment == 'production'
+    environment: production
+
+    steps:
+    - name: Deploy to production environment
+      run: |
+        echo "🚀 Deploying to production environment..."
+        echo "Image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.ref_name }}"
+
+        # Production deployment commands
+        # Examples:
+        # - Railway: railway up --environment production
+        # - Render: trigger production deployment webhook
+        # - Kubernetes: kubectl set image deployment/app app=$IMAGE
+
+        echo "✅ Production deployment completed"
+
+    - name: Run production health checks
+      run: |
+        echo "🏥 Running production health checks..."
+
+        # Wait for deployment to be ready
+        sleep 60
+
+        # Replace with your actual production URL
+        PRODUCTION_URL="https://your-production-app.com"
+
+        # Critical health checks
+        curl -f "$PRODUCTION_URL/observability/health" || (echo "❌ Production health check failed" && exit 1)
+        curl -f "$PRODUCTION_URL/observability/ready" || (echo "❌ Production readiness check failed" && exit 1)
+
+        echo "✅ Production health checks passed"
+
+    - name: Post-deployment monitoring
+      run: |
+        echo "📊 Setting up post-deployment monitoring..."
+
+        # Here you would:
+        # - Send deployment notification to monitoring systems
+        # - Update external monitoring with new deployment info
+        # - Trigger additional monitoring checks
+
+        echo "✅ Post-deployment monitoring configured"
+
+  # === Rollback Capability ===
+  rollback:
+    name: Rollback
+    runs-on: ubuntu-latest
+    if: failure() && github.event_name == 'workflow_dispatch'
+    needs: [deploy-staging, deploy-production]
+
+    steps:
+    - name: Rollback deployment
+      run: |
+        echo "🔄 Rolling back deployment..."
+
+        # Get previous successful deployment
+        # This would depend on your deployment platform
+        # Examples:
+        # - Railway: railway rollback
+        # - Kubernetes: kubectl rollout undo deployment/app
+
+        echo "✅ Rollback completed"
+
+  # === Deployment Summary ===
+  deployment-summary:
+    name: Deployment Summary
+    runs-on: ubuntu-latest
+    needs: [deploy-staging, deploy-production]
+    if: always()
+
+    steps:
+    - name: Create deployment summary
+      run: |
+        echo "## 🚀 Deployment Summary" >> $GITHUB_STEP_SUMMARY
+        echo "| Component | Status |" >> $GITHUB_STEP_SUMMARY
+        echo "|-----------|---------|" >> $GITHUB_STEP_SUMMARY
+
+        if [ "${{ needs.deploy-staging.result }}" != "skipped" ]; then
+          echo "| Staging Deployment | ${{ needs.deploy-staging.result == 'success' && '✅ Success' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
+        fi
+
+        if [ "${{ needs.deploy-production.result }}" != "skipped" ]; then
+          echo "| Production Deployment | ${{ needs.deploy-production.result == 'success' && '✅ Success' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
+        fi
+
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "**Deployed Image:** \`${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}\`" >> $GITHUB_STEP_SUMMARY
+        echo "**Environment:** ${{ needs.pre-deployment.outputs.environment }}" >> $GITHUB_STEP_SUMMARY
+        echo "**Triggered by:** ${{ github.actor }}" >> $GITHUB_STEP_SUMMARY

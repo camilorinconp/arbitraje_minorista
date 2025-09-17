@@ -1,6 +1,6 @@
 # backend/routes/gestion_datos.py
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Request
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
 from pydantic import BaseModel, HttpUrl, field_validator, ConfigDict
@@ -8,9 +8,14 @@ from typing import List, Optional
 from datetime import datetime
 
 from ..services import database
+from ..services.rate_limiter import limiter
 from ..models.producto import Producto as ProductoModel
 from ..models.minorista import Minorista as MinoristaModel
 from ..models.historial_precio import HistorialPrecio as HistorialPrecioModel
+
+# Import authentication dependencies
+from ..auth.middleware import get_current_user, require_permission
+from ..auth.models import User
 
 router = APIRouter(
     prefix="/gestion-datos",
@@ -108,7 +113,14 @@ class HistorialPrecioSchema(BaseModel):
 @router.post(
     "/minoristas/", response_model=Minorista, status_code=status.HTTP_201_CREATED
 )
-def crear_minorista(minorista: MinoristaBase, db: Session = Depends(database.get_db)):
+@limiter.limit("30/minute")
+@limiter.limit("200/hour")
+def crear_minorista(
+    request: Request,
+    minorista: MinoristaBase,
+    current_user: User = Depends(require_permission("write")),
+    db: Session = Depends(database.get_db)
+):
     """
     Crea un nuevo minorista en la base de datos.
     """
@@ -172,8 +184,14 @@ def obtener_minorista(minorista_id: int, db: Session = Depends(database.get_db))
 
 
 @router.put("/minoristas/{minorista_id}", response_model=Minorista)
+@limiter.limit("20/minute")
+@limiter.limit("150/hour")
 def actualizar_minorista(
-    minorista_id: int, minorista: MinoristaBase, db: Session = Depends(database.get_db)
+    request: Request,
+    minorista_id: int,
+    minorista: MinoristaBase,
+    current_user: User = Depends(require_permission("write")),
+    db: Session = Depends(database.get_db)
 ):
     """
     Actualiza un minorista existente por su ID.
@@ -194,7 +212,14 @@ def actualizar_minorista(
 
 
 @router.delete("/minoristas/{minorista_id}", status_code=status.HTTP_204_NO_CONTENT)
-def eliminar_minorista(minorista_id: int, db: Session = Depends(database.get_db)):
+@limiter.limit("10/minute")
+@limiter.limit("50/hour")
+def eliminar_minorista(
+    request: Request,
+    minorista_id: int,
+    current_user: User = Depends(require_permission("delete")),
+    db: Session = Depends(database.get_db)
+):
     """
     Elimina un minorista por su ID.
     """

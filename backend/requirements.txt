@@ -6,6 +6,11 @@ supabase
 psycopg2-binary
 python-dotenv
 apscheduler
+PyJWT==2.8.0
+passlib[bcrypt]==1.7.4
+python-multipart==0.0.6
+slowapi==0.1.9
+asyncpg==0.29.0
 
 # Herramientas de calidad de código
 black
