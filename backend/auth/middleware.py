@@ -13,13 +13,13 @@ from ..services.metrics import metrics_collector
 
 logger = logging.getLogger(__name__)
 
-# Configuración del esquema de autenticación
+# ConfiguraciÃ³n del esquema de autenticaciÃ³n
 security = HTTPBearer(auto_error=False)
 
 
 class AuthMiddleware:
     """
-    Middleware de autenticación para validar tokens JWT.
+    Middleware de autenticaciÃ³n para validar tokens JWT.
     """
 
     def __init__(self):
@@ -27,7 +27,7 @@ class AuthMiddleware:
 
     async def __call__(self, request: Request, call_next):
         """
-        Procesar request de autenticación.
+        Procesar request de autenticaciÃ³n.
         """
         # Extraer token del header Authorization
         authorization = request.headers.get("Authorization")
@@ -36,7 +36,7 @@ class AuthMiddleware:
         if authorization and authorization.startswith("Bearer "):
             token = authorization.split(" ")[1]
 
-        # Agregar información de autenticación al request state
+        # Agregar informaciÃ³n de autenticaciÃ³n al request state
         request.state.authenticated = False
         request.state.current_user = None
         request.state.token_payload = None
@@ -48,7 +48,7 @@ class AuthMiddleware:
                 request.state.authenticated = True
                 request.state.token_payload = payload
 
-                # Registrar métricas de autenticación exitosa
+                # Registrar mÃ©tricas de autenticaciÃ³n exitosa
                 metrics_collector.increment_counter(
                     "auth_success_total",
                     tags={
@@ -60,7 +60,7 @@ class AuthMiddleware:
                 logger.debug(f"Successfully authenticated user: {payload.get('sub')}")
 
             except HTTPException as e:
-                # Registrar métricas de autenticación fallida
+                # Registrar mÃ©tricas de autenticaciÃ³n fallida
                 metrics_collector.increment_counter(
                     "auth_failure_total",
                     tags={
@@ -72,7 +72,7 @@ class AuthMiddleware:
                 logger.warning(f"Authentication failed for endpoint {request.url.path}: {e.detail}")
 
             except Exception as e:
-                # Error inesperado en autenticación
+                # Error inesperado en autenticaciÃ³n
                 metrics_collector.increment_counter(
                     "auth_error_total",
                     tags={
@@ -87,14 +87,14 @@ class AuthMiddleware:
         return response
 
 
-# Dependencias de autenticación
+# Dependencias de autenticaciÃ³n
 
 async def get_current_user_optional(
     credentials: Optional[HTTPAuthorizationCredentials] = Depends(security),
     db: AsyncSession = Depends(get_db_session)
 ) -> Optional[User]:
     """
-    Obtener usuario actual (opcional - no falla si no está autenticado).
+    Obtener usuario actual (opcional - no falla si no estÃ¡ autenticado).
     """
     if not credentials:
         return None
@@ -113,7 +113,7 @@ async def get_current_user_optional(
         user = result.scalar_one_or_none()
 
         if user:
-            # Actualizar última actividad (sin commit para evitar overhead)
+            # Actualizar Ãºltima actividad (sin commit para evitar overhead)
             user.update_last_login()
 
         return user
@@ -130,7 +130,7 @@ async def get_current_user(
     db: AsyncSession = Depends(get_db_session)
 ) -> User:
     """
-    Obtener usuario actual (requerido - falla si no está autenticado).
+    Obtener usuario actual (requerido - falla si no estÃ¡ autenticado).
     """
     if not credentials:
         logger.warning("No credentials provided")
@@ -163,10 +163,10 @@ async def get_current_user(
                 detail="User not found or inactive"
             )
 
-        # Actualizar última actividad
+        # Actualizar Ãºltima actividad
         user.update_last_login()
 
-        # Registrar métrica de acceso de usuario
+        # Registrar mÃ©trica de acceso de usuario
         metrics_collector.increment_counter(
             "user_access_total",
             tags={
@@ -241,7 +241,7 @@ async def get_current_superuser(current_user: User = Depends(get_current_active_
 
 def require_permission(permission: str):
     """
-    Decorador para requerir un permiso específico.
+    Decorador para requerir un permiso especÃ­fico.
     """
     async def permission_dependency(current_user: User = Depends(get_current_active_user)) -> User:
         if not current_user.has_permission(permission):
@@ -257,7 +257,7 @@ def require_permission(permission: str):
 
 def require_role(role: str):
     """
-    Decorador para requerir un rol específico.
+    Decorador para requerir un rol especÃ­fico.
     """
     async def role_dependency(current_user: User = Depends(get_current_active_user)) -> User:
         if current_user.role != role and not current_user.is_superuser:

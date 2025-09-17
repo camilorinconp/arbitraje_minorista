@@ -19,6 +19,7 @@ from ..auth.models import User
 from ..services.database import get_db_session
 from ..services.rate_limiter import limiter
 from ..services.metrics import metrics_collector
+from ..auth.sentry_utils import capture_auth_error, capture_failed_login, capture_password_reset_request
 import logging
 
 logger = logging.getLogger(__name__)
@@ -45,6 +46,7 @@ async def register_user(
         raise
     except Exception as e:
         logger.error(f"Unexpected error in user registration: {e}", exc_info=True)
+        capture_auth_error(e, operation="user_registration", extra_data={"email": user_data.email})
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Registration failed"
@@ -69,6 +71,11 @@ async def login_user(
             metrics_collector.increment_counter(
                 "login_attempts_total",
                 tags={"result": "failed", "endpoint": "/auth/login"}
+            )
+            capture_failed_login(
+                email=login_data.email,
+                reason="invalid_credentials",
+                ip_address=request.client.host if request.client else None
             )
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,

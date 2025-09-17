@@ -19,7 +19,7 @@ logger = logging.getLogger(__name__)
 
 class AuthService:
     """
-    Servicio de autenticación que maneja usuarios, login, y tokens.
+    Servicio de autenticaciÃ³n que maneja usuarios, login, y tokens.
     """
 
     def __init__(self):
@@ -56,14 +56,14 @@ class AuthService:
             # Hash de la password
             db_user.set_password(user_data.password)
 
-            # Generar token de verificación
+            # Generar token de verificaciÃ³n
             verification_token = db_user.generate_verification_token()
 
             db.add(db_user)
             await db.commit()
             await db.refresh(db_user)
 
-            # Registrar métricas
+            # Registrar mÃ©tricas
             metrics_collector.increment_counter(
                 "users_created_total",
                 tags={"role": db_user.role}
@@ -409,7 +409,7 @@ class AuthService:
 
     async def get_user_stats(self, user_id: int, db: AsyncSession) -> Dict[str, Any]:
         """
-        Obtener estadísticas de usuario.
+        Obtener estadÃ­sticas de usuario.
         """
         try:
             user = await self.get_user_by_id(user_id, db)

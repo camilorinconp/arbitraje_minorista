@@ -24,6 +24,7 @@ from backend.services.graceful_shutdown import (
 )
 from backend.services.rate_limiter import setup_rate_limiting
 from backend.core.config import settings, validate_production_config
+from backend.core.sentry_init import init_sentry
 import asyncio
 import logging
 
@@ -32,6 +33,9 @@ import logging
 async def lifespan(app: FastAPI):
     # Startup
     logger = logging.getLogger(__name__)
+
+    # Initialize Sentry for error monitoring
+    init_sentry()
 
     # Validate production configuration
     if settings.is_production:

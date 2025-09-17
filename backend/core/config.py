@@ -95,6 +95,12 @@ class Settings(BaseSettings):
     health_checks_enabled: bool = True
     structured_logging: bool = True
 
+    # === Sentry Configuration ===
+    sentry_dsn: Optional[str] = None
+    sentry_environment: Optional[str] = None
+    sentry_traces_sample_rate: float = 0.1
+    sentry_profiles_sample_rate: float = 0.1
+
     # === Security Settings ===
     enable_https_redirect: bool = False
     trusted_proxies: List[str] = ["127.0.0.1", "::1"]

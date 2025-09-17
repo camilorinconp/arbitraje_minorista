@@ -6,14 +6,14 @@ from datetime import datetime, timezone
 from passlib.context import CryptContext
 import uuid
 
-from ..models.base import Base
+from ..services.database import Base
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
 class User(Base):
     """
-    Modelo de usuario para autenticaci髇 y autorizaci髇.
+    Modelo de usuario para autenticaci贸n y autorizaci贸n.
     """
     __tablename__ = "users"
 
@@ -36,7 +36,7 @@ class User(Base):
     updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
     last_login = Column(DateTime(timezone=True), nullable=True)
 
-    # Para verificaci髇 de email
+    # Para verificaci贸n de email
     verification_token = Column(String(255), nullable=True)
 
     # Para reset de password
@@ -57,7 +57,7 @@ class User(Base):
         self.hashed_password = self.hash_password(password)
 
     def generate_verification_token(self) -> str:
-        """Generar token de verificaci髇."""
+        """Generar token de verificaci贸n."""
         token = str(uuid.uuid4())
         self.verification_token = token
         return token
@@ -75,13 +75,13 @@ class User(Base):
         self.reset_token_expires = None
 
     def is_reset_token_valid(self) -> bool:
-        """Verificar si el token de reset es v醠ido."""
+        """Verificar si el token de reset es v谩lido."""
         if not self.reset_token or not self.reset_token_expires:
             return False
         return datetime.now(timezone.utc) < self.reset_token_expires
 
     def has_permission(self, permission: str) -> bool:
-        """Verificar si el usuario tiene un permiso espec韋ico."""
+        """Verificar si el usuario tiene un permiso espec铆fico."""
         if self.is_superuser:
             return True
 
@@ -95,7 +95,7 @@ class User(Base):
         return permission in role_permissions.get(self.role, [])
 
     def can_access_endpoint(self, endpoint: str) -> bool:
-        """Verificar si el usuario puede acceder a un endpoint espec韋ico."""
+        """Verificar si el usuario puede acceder a un endpoint espec铆fico."""
         if self.is_superuser:
             return True
 
@@ -110,12 +110,12 @@ class User(Base):
 
         required_permission = endpoint_permissions.get(endpoint)
         if not required_permission:
-            return True  # Endpoint p鷅lico
+            return True  # Endpoint p煤blico
 
         return self.has_permission(required_permission)
 
     def update_last_login(self) -> None:
-        """Actualizar 鷏timo login."""
+        """Actualizar 煤ltimo login."""
         self.last_login = datetime.now(timezone.utc)
 
     def __repr__(self):
@@ -135,12 +135,12 @@ class RefreshToken(Base):
     created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
     revoked = Column(Boolean, default=False, nullable=False)
 
-    # Metadatos del dispositivo/sesi髇
+    # Metadatos del dispositivo/sesi贸n
     user_agent = Column(Text, nullable=True)
     ip_address = Column(String(45), nullable=True)  # IPv6 compatible
 
     def is_valid(self) -> bool:
-        """Verificar si el token es v醠ido."""
+        """Verificar si el token es v谩lido."""
         if self.revoked:
             return False
         return datetime.now(timezone.utc) < self.expires_at

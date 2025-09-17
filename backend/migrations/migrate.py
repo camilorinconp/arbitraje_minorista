@@ -27,7 +27,11 @@ class MigrationRunner:
     """
 
     def __init__(self, database_url: str):
-        self.database_url = database_url
+        # Convert SQLAlchemy URL to asyncpg format
+        if database_url.startswith("postgresql+asyncpg://"):
+            self.database_url = database_url.replace("postgresql+asyncpg://", "postgresql://")
+        else:
+            self.database_url = database_url
         self.migrations_dir = Path(__file__).parent
 
     async def create_migrations_table(self, conn: asyncpg.Connection):

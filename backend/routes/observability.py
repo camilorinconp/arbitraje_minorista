@@ -1,6 +1,6 @@
 # backend/routes/observability.py
 
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, HTTPException, Query, Request
 from typing import Dict, Any, Optional, List
 from datetime import datetime
 import time
@@ -8,12 +8,15 @@ import time
 from ..services.metrics import metrics_collector, health_checker
 from ..services.cache import app_cache
 from ..services.logging_config import set_correlation_id
+from ..services.rate_limiter import limiter
 
 router = APIRouter(prefix="/observability", tags=["observability"])
 
 
 @router.get("/health", response_model=Dict[str, Any])
-async def health_check():
+@limiter.limit("200/minute")
+@limiter.limit("5000/hour")
+async def health_check(request: Request):
     """
     Endpoint de health check del sistema.
     """

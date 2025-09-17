@@ -1,48 +1,46 @@
-import os
-from dotenv import load_dotenv
 from supabase import create_client, Client
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
 
-# Cargar variables de entorno desde el archivo .env
-load_dotenv()
+from ..core.config import settings
 
 # --- Conexión a Supabase (Cliente genérico) ---
-supabase_url = os.getenv("SUPABASE_URL")
-supabase_key = os.getenv("SUPABASE_KEY")
+supabase_url = settings.supabase_url
+supabase_key = settings.supabase_anon_key
 
-if not supabase_url or not supabase_key:
+# Solo validar Supabase en producción
+if settings.is_production and (not supabase_url or not supabase_key):
     raise ValueError(
-        "Las variables de entorno SUPABASE_URL y SUPABASE_KEY son necesarias."
+        "Las variables de entorno SUPABASE_URL y SUPABASE_ANON_KEY son necesarias en producción."
     )
 
-supabase_client: Client = create_client(supabase_url, supabase_key)
+# Only create Supabase client if configuration is provided
+supabase_client: Client = None
+if supabase_url and supabase_key:
+    supabase_client = create_client(supabase_url, supabase_key)
 
 # --- Conexión directa a la Base de Datos con SQLAlchemy ---
-database_url = os.getenv("DATABASE_URL")
+# URL de la base de datos desde configuración
+database_url = settings.database_url_for_env
 
-if not database_url:
-    raise ValueError("La variable de entorno DATABASE_URL es necesaria.")
-
-engine = create_engine(database_url)
+# Crear engine síncrono para compatibilidad
+sync_database_url = database_url.replace("postgresql+asyncpg://", "postgresql://")
+engine = create_engine(sync_database_url)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 # --- Configuración Async para SQLAlchemy ---
-# Convertir URL de PostgreSQL síncrona a asíncrona
-async_database_url = database_url.replace("postgresql://", "postgresql+asyncpg://")
-
 # Configurar engine async con connection pooling optimizado
 async_engine = create_async_engine(
-    async_database_url,
-    # Connection pool settings
-    pool_size=20,           # Número base de conexiones en el pool
-    max_overflow=30,        # Conexiones adicionales cuando se necesite
+    database_url,
+    # Connection pool settings from config
+    pool_size=settings.db_pool_size,
+    max_overflow=settings.db_max_overflow,
     pool_pre_ping=True,     # Verificar conexiones antes de usar
-    pool_recycle=3600,      # Reciclar conexiones cada hora
+    pool_recycle=settings.db_pool_recycle,
     # Performance settings
-    echo=False,             # No loggear todas las queries SQL en producción
+    echo=settings.debug,    # Loggear queries solo en debug
     future=True,            # Usar la nueva API de SQLAlchemy 2.0
 )
 
@@ -73,3 +71,9 @@ async def get_async_db():
             yield db
         finally:
             await db.close()
+
+
+# Alias for authentication middleware
+async def get_db_session():
+    async for session in get_async_db():
+        yield session

@@ -9,6 +9,24 @@
 gemini.md
 recomendaciones_equipo_asesor_externo.md
 
-# Archivos de entorno local
+# Archivos de entorno local y secretos
 *.env
 *.env.local
+.env.production
+.env.staging
+
+# Específicamente permitir archivos de ejemplo
+!.env.example
+!.env.development
+
+# Archivos de configuración sensibles
+config.local.json
+secrets.json
+
+# Logs de aplicación
+logs/
+*.log
+
+# Archivos de respaldo de base de datos
+*.sql.backup
+*.db.backup

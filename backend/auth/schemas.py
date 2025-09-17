@@ -177,7 +177,7 @@ class PasswordResetConfirm(BaseModel):
 
 
 class EmailVerification(BaseModel):
-    """Schema para verificación de email."""
+    """Schema para verificaciÃ³n de email."""
     token: str
 
 
@@ -189,7 +189,7 @@ class UserPermissions(BaseModel):
 
 
 class UserStats(BaseModel):
-    """Schema para estadísticas de usuario."""
+    """Schema para estadÃ­sticas de usuario."""
     total_requests: int = 0
     last_activity: Optional[datetime] = None
     created_at: datetime
@@ -218,7 +218,7 @@ class ApiKeyResponse(BaseModel):
 
 
 class ApiKeyInfo(BaseModel):
-    """Schema para información de API key (sin mostrar la key)."""
+    """Schema para informaciÃ³n de API key (sin mostrar la key)."""
     id: int
     name: str
     permissions: list[str]
@@ -251,7 +251,7 @@ class SecurityEvent(BaseModel):
     timestamp: datetime
     ip_address: Optional[str] = None
     user_agent: Optional[str] = None
-    severity: str = Field(default="info", regex="^(low|medium|high|critical)$")
+    severity: str = Field(default="info", pattern="^(low|medium|high|critical)$")
 
 
 class MessageResponse(BaseModel):

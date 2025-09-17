@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 
 class JWTHandler:
     """
-    Manejador de tokens JWT para autenticaciÛn.
+    Manejador de tokens JWT para autenticaci√≥n.
     """
 
     def __init__(self):
@@ -102,7 +102,7 @@ class JWTHandler:
                     detail="Invalid token type"
                 )
 
-            # Verificar expiraciÛn
+            # Verificar expiraci√≥n
             exp_timestamp = payload.get("exp")
             if exp_timestamp:
                 exp_datetime = datetime.fromtimestamp(exp_timestamp, timezone.utc)
@@ -180,7 +180,7 @@ class JWTHandler:
 
     def get_token_payload(self, token: str) -> Optional[Dict[str, Any]]:
         """
-        Obtener payload del token sin verificar expiraciÛn (para debugging).
+        Obtener payload del token sin verificar expiraci√≥n (para debugging).
         """
         try:
             payload = jwt.decode(
@@ -196,7 +196,7 @@ class JWTHandler:
 
     def is_token_expired(self, token: str) -> bool:
         """
-        Verificar si un token est· expirado.
+        Verificar si un token est√° expirado.
         """
         payload = self.get_token_payload(token)
         if not payload:
@@ -211,21 +211,21 @@ class JWTHandler:
 
     def create_verification_token(self, email: str) -> str:
         """
-        Crear token para verificaciÛn de email.
+        Crear token para verificaci√≥n de email.
         """
         data = {
             "sub": email,
             "purpose": "email_verification"
         }
 
-        # Token de verificaciÛn v·lido por 24 horas
+        # Token de verificaci√≥n v√°lido por 24 horas
         expires_delta = timedelta(hours=24)
 
         return self.create_access_token(data=data, expires_delta=expires_delta)
 
     def verify_email_token(self, token: str) -> str:
         """
-        Verificar token de verificaciÛn de email.
+        Verificar token de verificaci√≥n de email.
         """
         try:
             payload = self.verify_token(token, token_type="access")
@@ -256,7 +256,7 @@ class JWTHandler:
             "purpose": "password_reset"
         }
 
-        # Token de reset v·lido por 1 hora
+        # Token de reset v√°lido por 1 hora
         expires_delta = timedelta(hours=1)
 
         return self.create_access_token(data=data, expires_delta=expires_delta)
