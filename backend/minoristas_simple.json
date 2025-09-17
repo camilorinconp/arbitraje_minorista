@@ -1,0 +1,31 @@
+{
+  "minoristas": [
+    {
+      "id": 3,
+      "nombre": "walmart",
+      "url_base": "https://www.walmart.com",
+      "activo": true,
+      "name_selector": null,
+      "price_selector": null,
+      "image_selector": null,
+      "discovery_url": null,
+      "product_link_selector": null,
+      "created_at": "2025-09-17T17:45:13.797522",
+      "updated_at": null
+    },
+    {
+      "id": 4,
+      "nombre": "target",
+      "url_base": "https://www.target.com",
+      "activo": true,
+      "name_selector": null,
+      "price_selector": null,
+      "image_selector": null,
+      "discovery_url": null,
+      "product_link_selector": null,
+      "created_at": "2025-09-17T17:58:01.195065",
+      "updated_at": null
+    }
+  ],
+  "next_id": 5
+}

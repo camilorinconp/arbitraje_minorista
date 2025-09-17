@@ -72,18 +72,8 @@ const RegisterForm: React.FC<RegisterFormProps> = ({
       return 'Password es requerido';
     }
 
-    if (formData.password.length < 8) {
-      return 'Password debe tener al menos 8 caracteres';
-    }
-
-    // Password complexity check
-    const hasUppercase = /[A-Z]/.test(formData.password);
-    const hasLowercase = /[a-z]/.test(formData.password);
-    const hasNumbers = /\d/.test(formData.password);
-    const hasSpecialChar = /[!@#$%^&*(),.?":{}|<>]/.test(formData.password);
-
-    if (!hasUppercase || !hasLowercase || !hasNumbers || !hasSpecialChar) {
-      return 'Password debe contener mayúsculas, minúsculas, números y símbolos';
+    if (formData.password.length < 6) {
+      return 'Password debe tener al menos 6 caracteres';
     }
 
     if (formData.password !== formData.password_confirm) {
@@ -116,7 +106,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({
         password_confirm: formData.password_confirm,
       });
 
-      setSuccess('Cuenta creada exitosamente. Ya puedes iniciar sesión.');
+      setSuccess('¡Registro exitoso! Iniciando sesión automáticamente...');
 
       // Reset form
       setFormData({
@@ -256,7 +246,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({
           required
           disabled={isFormLoading}
           autoComplete="new-password"
-          helperText="Mínimo 8 caracteres con mayúsculas, minúsculas, números y símbolos"
+          helperText="Mínimo 6 caracteres"
           InputProps={{
             endAdornment: (
               <InputAdornment position="end">

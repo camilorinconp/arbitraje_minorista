@@ -14,7 +14,6 @@ import {
   logout as apiLogout,
   getCurrentUser,
   isAuthenticated,
-  getStoredTokens,
   clearTokens,
 } from '../api/authApi';
 import type { LoginRequest, RegisterRequest } from '../api/authApi';
@@ -83,14 +82,19 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const login = async (credentials: LoginRequest): Promise<void> => {
     setIsLoading(true);
     try {
+      console.log('Attempting login for:', credentials.email);
       // Login and get tokens
       await apiLogin(credentials);
+      console.log('Login API call successful, getting user data...');
 
       // Get user data
       const currentUser = await getCurrentUser();
+      console.log('Got current user:', currentUser);
       setUser(currentUser);
       setIsAuthenticatedState(true);
+      console.log('Login complete, user authenticated');
     } catch (error) {
+      console.error('Login error:', error);
       setUser(null);
       setIsAuthenticatedState(false);
       throw error;
@@ -102,10 +106,18 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const register = async (userData: RegisterRequest): Promise<void> => {
     setIsLoading(true);
     try {
+      console.log('Starting registration for:', userData.email);
       await apiRegister(userData);
-      // Note: After registration, user might need to verify email
-      // We don't automatically log them in
+      console.log('Registration successful, attempting auto-login...');
+
+      // Automatically log in the user after successful registration
+      await login({
+        email: userData.email,
+        password: userData.password
+      });
+      console.log('Auto-login successful');
     } catch (error) {
+      console.error('Registration or auto-login error:', error);
       throw error;
     } finally {
       setIsLoading(false);
